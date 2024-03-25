@@ -2,31 +2,25 @@
 #include <stdint.h>
 #include <signal.h>
 #include <stdlib.h>
-#include "global_allocator.h"
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include "garage.h"
 #include "binode.h"
 
-void handle_signal(int sig);
-void clean_up(void);
-
 int main(void) {
-	global_allocator = global_allocator_init(0x1000);
-	Binode *root = binode_new(global_allocator, 0);
-	signal(SIGSEGV, handle_signal);
-	clean_up();
-	return 0;
-}
-
-void clean_up(void) {
-	global_allocator_deinit(global_allocator);
-}
-
-void handle_signal(int sig) {
-	switch(sig) {
-		case SIGSEGV:
-			clean_up();
-			exit(1);
-			break;
-		default:
-			break;
+	setup_env();
+	Binode root = binode_new(0);
+	binode_insert(root, 1);
+	binode_insert(root, 2);
+	binode_insert(root, 3);
+	binode_insert(root, 4);
+	binode_insert(root, 5);
+	Binode begin = preorder_begin(root), end = preorder_end(root);
+	while(begin != end) {
+		printf("%d\n", binode_get(begin));
+		begin = preorder_next(begin);
 	}
+	cleanup();
+	return 0;
 }
