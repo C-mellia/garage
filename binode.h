@@ -14,15 +14,13 @@ typedef struct Binode {
 
 Binode binode_new(int key);
 
-Binode binode_ll_insert(Binode node, int key);
-Binode binode_lr_insert(Binode node, int key);
-Binode binode_rl_insert(Binode node, int key);
-Binode binode_rr_insert(Binode node, int key);
+void binode_ll_insert(Binode node, Binode n);
+void binode_lr_insert(Binode node, Binode n);
+void binode_rl_insert(Binode node, Binode n);
+void binode_rr_insert(Binode node, Binode n);
 
-Binode bionde_ll_backsert(Binode node, int key);
-Binode bionde_lr_backsert(Binode node, int key);
-Binode bionde_rl_backsert(Binode node, int key);
-Binode bionde_rr_backsert(Binode node, int key);
+void binode_lbacksert(Binode node, Binode n);
+void binode_rbacksert(Binode node, Binode n);
 
 Binode preorder_begin(Binode root);
 Binode preorder_end(Binode root);
@@ -55,7 +53,7 @@ Binode preorder_end(Binode root) {
 	Binode parent;
 	while (root) {
 		parent = root->pr;
-		if (parent && parent->lc == root) {
+		if (parent && parent->lc == root && parent->rc) {
 			root = parent->rc;
 			break;
 		} else {
@@ -132,20 +130,24 @@ Binode postorder_next(Binode node) {
 	(n)->pr = node;\
 } while(0)
 
-Binode binode_ll_insert(Binode node, Binode n) {
-	if (n) BINODE_INSERT(node, n, lc, lc);
+void binode_ll_insert(Binode node, Binode n) {
+	if (!node) return;
+	BINODE_INSERT(node, n, lc, lc);
 }
 
-Binode binode_lr_insert(Binode node, Binode n) {
-	if (n) BINODE_INSERT(node, n, lc, rc);
+void binode_lr_insert(Binode node, Binode n) {
+	if (!node) return;
+	BINODE_INSERT(node, n, lc, rc);
 }
 
-Binode binode_rl_insert(Binode node, Binode n) {
-	if (n) BINODE_INSERT(node, n, rc, lc);
+void binode_rl_insert(Binode node, Binode n) {
+	if (!node) return;
+	BINODE_INSERT(node, n, rc, lc);
 }
 
-Binode binode_rr_insert(Binode node, Binode n) {
-	if (n) BINODE_INSERT(node, n, rc, rc);
+void binode_rr_insert(Binode node, Binode n) {
+	if (!node) return;
+	BINODE_INSERT(node, n, rc, rc);
 }
 
 #define BINODE_BACKSERT(node, n, child) do {\
@@ -164,41 +166,56 @@ Binode binode_rr_insert(Binode node, Binode n) {
 	}\
 } while(0)
 
-Binode bionde_lbacksert(Binode node, Binode n) {
+void bionde_lbacksert(Binode node, Binode n) {
 	if (n) BINODE_BACKSERT(node, n, lc);
 }
 
-Binode binode_rbacksert(Binode node, Binode n) {
+void binode_rbacksert(Binode node, Binode n) {
 	if (n) BINODE_BACKSERT(node, n, rc);
 }
-
-#undef BINODE_BACKSERT
-#undef BINODE_INSERT
 
 int8_t max8(int8_t a, int8_t b) {
 	return a > b? a: b;
 }
 
+void binode_height(Binode node) {
+	node->h[0] = node->lc? max8(node->lc->h[0], node->lc->h[1]) + 1: 0;
+	node->h[1] = node->rc? max8(node->rc->h[0], node->rc->h[1]) + 1: 0;
+}
+
+#undef BINODE_BACKSERT
+#undef BINODE_INSERT
+
 #define NODE_SIBLING(node, child) \
 	((node)->child == (node)->lc? (node)->rc: (node)->lc)
 
-#define NODE_SET_SIBLING(node, child, n) \
-	((node)->child == (node)->lc? (node)->rc = n: (node)->lc = n)
+#define NODE_SET_SIBLING(node, child, n) do {\
+	if ((node)->child == (node)->lc) {\
+		(node)->rc = n;\
+	} else {\
+		(node)->lc = n;\
+	}\
+} while(0)
 
 #define NODE_BALANCE(node, child) do {\
 	Binode n = (node)->child;\
+	if (!n) break;\
 	if(NODE_SIBLING(n, child)) {\
 		Binode m = NODE_SIBLING(n, child);\
 		if (m->child) {\
 			NODE_SET_SIBLING(n, child, m->child);\
-			NODE_SIBLING(m, child)->pr = n;\
+			m->child->pr = n;\
 		}\
 		(node)->child = m;\
 		m->pr = node;\
 		m->child = n;\
-		(n)->pr = m;\
+		n->pr = m;\
+		binode_height(n);\
+		binode_height(m);\
+		binode_height(node);\
+		n = m;\
 	}\
-	(n)->pr = (node)->pr;\
+	n->pr = (node)->pr;\
 	if ((node)->pr) {\
 		if ((node)->pr->lc == node) {\
 			(node)->pr->lc = n;\
@@ -206,61 +223,74 @@ int8_t max8(int8_t a, int8_t b) {
 			(node)->pr->rc = n;\
 		}\
 	}\
-	(n)->lc = node;\
+	(node)->child = NODE_SIBLING(n, child);\
+	if (NODE_SIBLING(n, child)) {\
+		NODE_SIBLING(n, child)->pr = node;\
+	}\
+	NODE_SET_SIBLING(n, child, node);\
+	node->pr = n;\
 } while(0)
 
-void binode_balance(Binode node) {
+static inline Binode binode_balance(Binode node) {
 	int8_t b = node->h[1] - node->h[0];
-	if (b > 1) { 
-		Binode n = node->rc;
-		NODE_BALANCE(node, n, rc);
-	} else if (b < -1) {
-		Binode n = node->lc;
-		NODE_BALANCE(node, n, lc);
-	}
+	if (b > 1) NODE_BALANCE(node, rc);
+	else if (b < -1) NODE_BALANCE(node, lc);
+	else return 0;
+	return node->pr;
 }
 
 int binode_insert(Binode node, int key) {
 	while(node && node->key != key) {
-		if ((key < node->key && node->lc) || (key > node->key && node->rc)) {
+		if ((key < node->key && !node->lc) || (key > node->key && !node->rc)) {
 			break;
 		}
+		node = node->key < key? node->rc: node->lc;
 	}
-	if (key < node->key && !node->lc) {
-		Binode n = binode_ll_insert(node, key);
-		if (!node->rc) {
-			while(node) {
-			}
-		}
-	} else if (key > node->key && node->rc) {
-	} else {
-		return -1;
+	if (!node || node->key == key) return -1;
+	Binode n = binode_new(key);
+	if (!n) return -1;
+	if (key < node->key) {
+		binode_ll_insert(node, n);
+	} else if (key > node->key) {
+		binode_rl_insert(node, n);
+	}
+	while(node) {
+		binode_height(node);
+		Binode r = binode_balance(node);
+		node = r? : node;
+		node = node->pr;
 	}
 	return 0;
-	while(node) {
-		if (key < node->key) {
-			if (node->lc) {
-				node = node->lc;
-			} else {
-				if (node->h[1] > 0) {
-					Binode n = binode_ll_insert(node, key), n1;
-					int child;
-					while (n) {
-						node->h[0] = max8(n->h[0], n->h[1]) + 1;
-						if (node->h[1] - node->h[0] > 1) {
-						} else if (node->h[1] - node->h[0] < -1) {
-						}
-						node = n;
-						n = n->pr;
-					}
-				}
-				break;
-			}
-		}
-	}
 }
 
 int binode_get(Binode node) {
 	code_trap(node, "invalid node");
 	return node->key;
+}
+
+Binode binode_root(Binode node) {
+	while(node && node->pr) node = node->pr;
+	return node;
+}
+
+void binode_print(Binode node) {
+	char buf[0x100];
+	int offs[3];
+	if (node->lc) {
+		offs[0] = sprintf(buf, "%d", node->lc->key);
+	} else {
+		offs[0] = sprintf(buf, "null");
+	}
+	if (node->rc) {
+		offs[1] = sprintf(buf + offs[0], "%d", node->rc->key);
+	} else {
+		offs[1] = sprintf(buf + offs[0], "null");
+	}
+	if (node->pr) {
+		offs[2] = sprintf(buf + offs[0] + offs[1], "%d", node->pr->key);
+	} else {
+		offs[2] = sprintf(buf + offs[0] + offs[1], "null");
+	}
+	printf("key: %d, balance: %d, lc: %.*s rc: %.*s pr: %.*s\n", 
+			node->key, (int)(node->h[1] - node->h[0]), offs[0], buf, offs[1], buf + offs[0], offs[2], buf + offs[0] + offs[1]);
 }

@@ -47,7 +47,7 @@ GlobAlloc ga = 0;
 int logfd = -1;
 App app = {
 	.logfname = "log",
-	.auto_report = 1
+	.auto_report = 0,
 };
 
 void setup_env(void);

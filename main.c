@@ -16,9 +16,17 @@ int main(void) {
 	binode_insert(root, 3);
 	binode_insert(root, 4);
 	binode_insert(root, 5);
+	root = binode_root(root);
+	// binode_ll_insert(root, binode_new(1));
+	// binode_ll_insert(root, binode_new(2));
+	// binode_ll_insert(root, binode_new(3));
+	// binode_rl_insert(root, binode_new(4));
+	// binode_rl_insert(root, binode_new(5));
+
 	Binode begin = preorder_begin(root), end = preorder_end(root);
+	printf("%p %p\n", begin, end);
 	while(begin != end) {
-		printf("%d\n", binode_get(begin));
+		binode_print(begin);
 		begin = preorder_next(begin);
 	}
 	cleanup();
