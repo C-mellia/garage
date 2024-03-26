@@ -9,7 +9,7 @@
 typedef struct Binode {
 	struct Binode *lc, *rc, *pr;
 	int key;
-	uint8_t h[2];
+	int8_t h[2];
 } *Binode;
 
 Binode binode_new(int key);
@@ -132,31 +132,21 @@ Binode postorder_next(Binode node) {
 	(n)->pr = node;\
 } while(0)
 
-Binode binode_ll_insert(Binode node, int key) {
-	Binode n = binode_new(key);
+Binode binode_ll_insert(Binode node, Binode n) {
 	if (n) BINODE_INSERT(node, n, lc, lc);
-	return n;
 }
 
-Binode binode_lr_insert(Binode node, int key) {
-	Binode n = binode_new(key);
+Binode binode_lr_insert(Binode node, Binode n) {
 	if (n) BINODE_INSERT(node, n, lc, rc);
-	return n;
 }
 
-Binode binode_rl_insert(Binode node, int key) {
-	Binode n = binode_new(key);
+Binode binode_rl_insert(Binode node, Binode n) {
 	if (n) BINODE_INSERT(node, n, rc, lc);
-	return n;
 }
 
-Binode binode_rr_insert(Binode node, int key) {
-	Binode n = binode_new(key);
+Binode binode_rr_insert(Binode node, Binode n) {
 	if (n) BINODE_INSERT(node, n, rc, rc);
-	return n;
 }
-
-#undef BINODE_INSERT
 
 #define BINODE_BACKSERT(node, n, child) do {\
 	Binode parent = node->pr;\
@@ -174,47 +164,94 @@ Binode binode_rr_insert(Binode node, int key) {
 	}\
 } while(0)
 
-Binode bionde_lbacksert(Binode node, int key) {
-	Binode n = binode_new(key);
+Binode bionde_lbacksert(Binode node, Binode n) {
 	if (n) BINODE_BACKSERT(node, n, lc);
-	return n;
 }
 
-Binode binode_rbacksert(Binode node, int key) {
-	Binode n = binode_new(key);
+Binode binode_rbacksert(Binode node, Binode n) {
 	if (n) BINODE_BACKSERT(node, n, rc);
-	return n;
 }
 
 #undef BINODE_BACKSERT
+#undef BINODE_INSERT
 
-void binode_insert(Binode node, int key) {
+int8_t max8(int8_t a, int8_t b) {
+	return a > b? a: b;
+}
+
+#define NODE_SIBLING(node, child) \
+	((node)->child == (node)->lc? (node)->rc: (node)->lc)
+
+#define NODE_SET_SIBLING(node, child, n) \
+	((node)->child == (node)->lc? (node)->rc = n: (node)->lc = n)
+
+#define NODE_BALANCE(node, n, child) do {\
+		if(n->child) {
+			Binode m = NODE_SIBLING(n, child);
+			if (NODE_SIBLING(m, child)) {
+				NODE_SET_SIBLING(n, child, m->child);
+				NODE_SIBLING(m, child)->pr = n;
+			}
+			node->rc = m;
+			m->pr = node;
+			m->rc = n;
+			n->pr = m;
+		}
+		n->pr = node->pr;
+		if (node->pr) {
+			if (node->pr->lc == node) {
+				node->pr->lc = n;
+			} else {
+				node->pr->rc = n;
+			}
+		}
+		n->lc = node;
+} while(0)
+
+void binode_balance(Binode node) {
+	int8_t b = node->h[1] - node->h[0];
+	Binode n = node->rc;
+	if (b > 1) NODE_BALANCE(node, n, rc);
+	else if (b < -1) NODE_BALANCE(node, n, lc);
+}
+
+int binode_insert(Binode node, int key) {
+	while(node && node->key != key) {
+		if ((key < node->key && node->lc) || (key > node->key && node->rc)) {
+			break;
+		}
+	}
+	if (key < node->key && !node->lc) {
+		Binode n = binode_ll_insert(node, key);
+		if (!node->rc) {
+			while(node) {
+			}
+		}
+	} else if (key > node->key && node->rc) {
+	} else {
+		return -1;
+	}
+	return 0;
 	while(node) {
 		if (key < node->key) {
 			if (node->lc) {
 				node = node->lc;
 			} else {
-				Binode n = binode_rbacksert(node, key);
-				while (n) {
-					n->h[1] = max(node->h[0], node->h[1]);
-					node = n;
-					n = n->pr;
-				}
-				break;
-			}
-		} else {
-			if (node->rc) {
-				node = node->rc;
-			} else {
-				node = binode_lbacksert(node, key);
-				if (node) {
-					node->h[0] = max(node->lc->h[0], node->lc->h[1]) + 1;
-					node->h[1] = max(node->rc->h[0], node->rc->h[1]) + 1;
+				if (node->h[1] > 0) {
+					Binode n = binode_ll_insert(node, key), n1;
+					int child;
+					while (n) {
+						node->h[0] = max8(n->h[0], n->h[1]) + 1;
+						if (node->h[1] - node->h[0] > 1) {
+						} else if (node->h[1] - node->h[0] < -1) {
+						}
+						node = n;
+						n = n->pr;
+					}
 				}
 				break;
 			}
 		}
-	
 	}
 }
 
