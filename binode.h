@@ -185,34 +185,39 @@ int8_t max8(int8_t a, int8_t b) {
 #define NODE_SET_SIBLING(node, child, n) \
 	((node)->child == (node)->lc? (node)->rc = n: (node)->lc = n)
 
-#define NODE_BALANCE(node, n, child) do {\
-		if(n->child) {
-			Binode m = NODE_SIBLING(n, child);
-			if (NODE_SIBLING(m, child)) {
-				NODE_SET_SIBLING(n, child, m->child);
-				NODE_SIBLING(m, child)->pr = n;
-			}
-			node->rc = m;
-			m->pr = node;
-			m->rc = n;
-			n->pr = m;
-		}
-		n->pr = node->pr;
-		if (node->pr) {
-			if (node->pr->lc == node) {
-				node->pr->lc = n;
-			} else {
-				node->pr->rc = n;
-			}
-		}
-		n->lc = node;
+#define NODE_BALANCE(node, child) do {\
+	Binode n = (node)->child;\
+	if(NODE_SIBLING(n, child)) {\
+		Binode m = NODE_SIBLING(n, child);\
+		if (m->child) {\
+			NODE_SET_SIBLING(n, child, m->child);\
+			NODE_SIBLING(m, child)->pr = n;\
+		}\
+		(node)->child = m;\
+		m->pr = node;\
+		m->child = n;\
+		(n)->pr = m;\
+	}\
+	(n)->pr = (node)->pr;\
+	if ((node)->pr) {\
+		if ((node)->pr->lc == node) {\
+			(node)->pr->lc = n;\
+		} else {\
+			(node)->pr->rc = n;\
+		}\
+	}\
+	(n)->lc = node;\
 } while(0)
 
 void binode_balance(Binode node) {
 	int8_t b = node->h[1] - node->h[0];
-	Binode n = node->rc;
-	if (b > 1) NODE_BALANCE(node, n, rc);
-	else if (b < -1) NODE_BALANCE(node, n, lc);
+	if (b > 1) { 
+		Binode n = node->rc;
+		NODE_BALANCE(node, n, rc);
+	} else if (b < -1) {
+		Binode n = node->lc;
+		NODE_BALANCE(node, n, lc);
+	}
 }
 
 int binode_insert(Binode node, int key) {
