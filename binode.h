@@ -13,6 +13,7 @@ typedef struct Binode {
 } *Binode;
 
 Binode binode_new(int key);
+void binode_print(Binode node);
 
 void binode_ll_insert(Binode node, Binode n);
 void binode_lr_insert(Binode node, Binode n);
@@ -174,11 +175,11 @@ void binode_rbacksert(Binode node, Binode n) {
 	if (n) BINODE_BACKSERT(node, n, rc);
 }
 
-int8_t max8(int8_t a, int8_t b) {
+static inline int8_t max8(int8_t a, int8_t b) {
 	return a > b? a: b;
 }
 
-void binode_height(Binode node) {
+static inline void binode_height(Binode node) {
 	node->h[0] = node->lc? max8(node->lc->h[0], node->lc->h[1]) + 1: 0;
 	node->h[1] = node->rc? max8(node->rc->h[0], node->rc->h[1]) + 1: 0;
 }
@@ -200,10 +201,10 @@ void binode_height(Binode node) {
 #define NODE_BALANCE(node, child) do {\
 	Binode n = (node)->child;\
 	if (!n) break;\
-	if(NODE_SIBLING(n, child)) {\
+	if((n->lc == n->child && n->h[1] > n->h[0]) || (n->rc == n->child && n->h[1] < n->h[0])) {\
 		Binode m = NODE_SIBLING(n, child);\
+		NODE_SET_SIBLING(n, child, m->child);\
 		if (m->child) {\
-			NODE_SET_SIBLING(n, child, m->child);\
 			m->child->pr = n;\
 		}\
 		(node)->child = m;\
@@ -229,6 +230,8 @@ void binode_height(Binode node) {
 	}\
 	NODE_SET_SIBLING(n, child, node);\
 	node->pr = n;\
+	binode_height(node);\
+	binode_height(n);\
 } while(0)
 
 static inline Binode binode_balance(Binode node) {
@@ -239,36 +242,44 @@ static inline Binode binode_balance(Binode node) {
 	return node->pr;
 }
 
-int binode_insert(Binode node, int key) {
-	while(node && node->key != key) {
-		if ((key < node->key && !node->lc) || (key > node->key && !node->rc)) {
-			break;
-		}
-		node = node->key < key? node->rc: node->lc;
-	}
-	if (!node || node->key == key) return -1;
-	Binode n = binode_new(key);
-	if (!n) return -1;
-	if (key < node->key) {
-		binode_ll_insert(node, n);
-	} else if (key > node->key) {
-		binode_rl_insert(node, n);
-	}
+Binode binode_rebalance(Binode node) {
 	while(node) {
 		binode_height(node);
 		Binode r = binode_balance(node);
 		node = r? : node;
+		if (!node->pr) break;
 		node = node->pr;
 	}
+	return node;
+}
+
+int _btree_insert(Binode node, int key) {
+	while(node && node->key != key) {
+		if ((key < node->key && !node->lc) || (key > node->key && !node->rc)) {
+			break;
+		}
+		node = key < node->key? node->lc: node->rc;
+	}
+	if (!node || node->key == key) return -1;
+	Binode n = binode_new(key);
+	if (!n) return -1;
+	if (key < node->key) binode_ll_insert(node, n);
+	else if (key > node->key) binode_rl_insert(node, n);
+	binode_rebalance(node);
 	return 0;
 }
 
-int binode_get(Binode node) {
+#define btree_insert(node, key) do {\
+	_btree_insert(node, key);\
+	node = binode_root(node);\
+} while(0)
+
+static inline int binode_get(Binode node) {
 	code_trap(node, "invalid node");
 	return node->key;
 }
 
-Binode binode_root(Binode node) {
+static inline Binode binode_root(Binode node) {
 	while(node && node->pr) node = node->pr;
 	return node;
 }
@@ -294,3 +305,83 @@ void binode_print(Binode node) {
 	printf("key: %d, balance: %d, lc: %.*s rc: %.*s pr: %.*s\n", 
 			node->key, (int)(node->h[1] - node->h[0]), offs[0], buf, offs[1], buf + offs[0], offs[2], buf + offs[0] + offs[1]);
 }
+
+static inline void binode_swap(Binode a, Binode b) {
+	if (!a || !b) return;
+	Binode temp;
+	if (b->lc) b->lc->pr = a;
+	if (a->lc) a->lc->pr = b;
+	temp = a->lc;
+	a->lc = b->lc;
+	b->lc = temp;
+	if (b->rc) b->rc->pr = a;
+	if (a->rc) a->rc->pr = b;
+	temp = a->rc;
+	a->rc = b->rc;
+	b->rc = temp;
+	if (b->pr) {
+		if (b == b->pr->lc) {
+			b->pr->lc = a;
+		} else {
+			b->pr->rc = a;
+		}
+	}
+	if (a->pr) {
+		if (a == a->pr->lc) {
+			a->pr->lc = b;
+		} else {
+			a->pr->rc = b;
+		}
+	}
+	temp = a->pr;
+	a->pr = b->pr;
+	b->pr = temp;
+}
+
+#define binode_swap(a, b) do {\
+	binode_swap(a, b);\
+	Binode temp = a;\
+	a = b;\
+	b = temp;\
+} while(0)
+
+Binode binode_locate(Binode node, int key) {
+	while(node && node->key != key) node = key < node->key? node->lc: node->rc;
+	return node;
+}
+
+#define BINODE_RESET_PR(node, n) do {\
+	if (node == (node)->pr->lc) {\
+		(node)->pr->lc = n;\
+	} else {\
+		(node)->pr->rc = n;\
+	}\
+} while(0)
+
+Binode _btree_delete(Binode node, int key) {
+	Binode temp = binode_locate(node, key);
+	if (!temp) return node;
+	node = temp;
+	if (node->lc) {
+		Binode n = node->lc;
+		while(n->rc) n = n->rc;
+		node->key = n->key;
+		BINODE_RESET_PR(n, n->lc);
+		if (n->lc) n->lc->pr = n->pr;
+		node = n->pr;
+	} else if (node->rc) {
+		if (node->pr) BINODE_RESET_PR(node, node->rc);
+		node->rc->pr = node->pr;
+		node = node->rc;
+	} else if (node->pr) {
+		BINODE_RESET_PR(node, 0);
+		node = node->pr;
+	} else {
+		return 0;
+	}
+	return node? binode_rebalance(node): 0;
+}
+
+#define btree_delete(node, key) do {\
+	node = _btree_delete(node, key);\
+} while(0)

@@ -11,12 +11,12 @@
 int main(void) {
 	setup_env();
 	Binode root = binode_new(0);
-	binode_insert(root, 1);
-	binode_insert(root, 2);
-	binode_insert(root, 3);
-	binode_insert(root, 4);
-	binode_insert(root, 5);
-	root = binode_root(root);
+	btree_insert(root, 1);
+	btree_insert(root, 2);
+	btree_insert(root, 3);
+	btree_insert(root, 4);
+	// btree_insert(root, 5);
+	// btree_delete(root, 5);
 	// binode_ll_insert(root, binode_new(1));
 	// binode_ll_insert(root, binode_new(2));
 	// binode_ll_insert(root, binode_new(3));
