@@ -14,7 +14,6 @@ typedef struct Binode {
 
 Binode binode_new(int key);
 void binode_print(Binode node);
-Binode binode_root(Binode node);
 
 void binode_ll_insert(Binode node, Binode n);
 void binode_lr_insert(Binode node, Binode n);
@@ -40,6 +39,7 @@ Binode postorder_next(Binode node);
 
 Binode binode_new(int key) {
 	Binode n = glob_alloc(ga, sizeof(*n));
+	code_trap(n, "memory allocation failed");
 	if (n) {
 		memset(n, 0, sizeof *n);
 		n->key = key;
@@ -251,36 +251,24 @@ Binode binode_rebalance(Binode node) {
 	return node;
 }
 
-int _btree_insert(Binode node, int key) {
-	while(node && node->key != key) {
-		if ((key < node->key && !node->lc) || (key > node->key && !node->rc)) {
-			break;
-		}
-		node = key < node->key? node->lc: node->rc;
+Binode _btree_insert(Binode node, int key) {
+	Binode n = node;
+	while(n) {
+		if ((key < n->key && !n->lc) || (key > n->key && !n->rc)) break;
+		if (key == n->key) return node;
+		n = key < n->key? n->lc: n->rc;
 	}
-	if (!node || node->key == key) return -1;
-	Binode n = binode_new(key);
-	if (!n) return -1;
+	if (!n) return 0;
+	n = binode_new(key);
 	if (key < node->key) binode_ll_insert(node, n);
 	else if (key > node->key) binode_rl_insert(node, n);
-	binode_rebalance(node);
-	return 0;
+	return binode_rebalance(node);
 }
 
 #define btree_insert(node, key) do {\
-	_btree_insert(node, key);\
-	node = binode_root(node);\
+	node = _btree_insert(node, key);\
+	if (!node) node = binode_new(key);\
 } while(0)
-
-static inline int binode_get(Binode node) {
-	code_trap(node, "invalid node");
-	return node->key;
-}
-
-Binode binode_root(Binode node) {
-	while(node && node->pr) node = node->pr;
-	return node;
-}
 
 void binode_print(Binode node) {
 	char buf[0x100];
@@ -304,7 +292,7 @@ void binode_print(Binode node) {
 			node->key, (int)(node->h[1] - node->h[0]), offs[0], buf, offs[1], buf + offs[0], offs[2], buf + offs[0] + offs[1]);
 }
 
-Binode binode_locate(Binode node, int key) {
+static inline Binode btree_locate(Binode node, int key) {
 	while(node && node->key != key) node = key < node->key? node->lc: node->rc;
 	return node;
 }
@@ -318,7 +306,7 @@ Binode binode_locate(Binode node, int key) {
 } while(0)
 
 Binode _btree_delete(Binode node, int key) {
-	Binode temp = binode_locate(node, key);
+	Binode temp = btree_locate(node, key);
 	if (!temp) return node;
 	node = temp;
 	if (node->lc) {
