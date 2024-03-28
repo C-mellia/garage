@@ -14,6 +14,7 @@ typedef struct Binode {
 
 Binode binode_new(int key);
 void binode_print(Binode node);
+Binode binode_root(Binode node);
 
 void binode_ll_insert(Binode node, Binode n);
 void binode_lr_insert(Binode node, Binode n);
@@ -184,9 +185,6 @@ static inline void binode_height(Binode node) {
 	node->h[1] = node->rc? max8(node->rc->h[0], node->rc->h[1]) + 1: 0;
 }
 
-#undef BINODE_BACKSERT
-#undef BINODE_INSERT
-
 #define NODE_SIBLING(node, child) \
 	((node)->child == (node)->lc? (node)->rc: (node)->lc)
 
@@ -279,7 +277,7 @@ static inline int binode_get(Binode node) {
 	return node->key;
 }
 
-static inline Binode binode_root(Binode node) {
+Binode binode_root(Binode node) {
 	while(node && node->pr) node = node->pr;
 	return node;
 }
@@ -302,48 +300,9 @@ void binode_print(Binode node) {
 	} else {
 		offs[2] = sprintf(buf + offs[0] + offs[1], "null");
 	}
-	printf("key: %d, balance: %d, lc: %.*s rc: %.*s pr: %.*s\n", 
+	printf("key: %d, balance: %d, lc: %.*s rc: %.*s pr: %.*s\n",
 			node->key, (int)(node->h[1] - node->h[0]), offs[0], buf, offs[1], buf + offs[0], offs[2], buf + offs[0] + offs[1]);
 }
-
-static inline void binode_swap(Binode a, Binode b) {
-	if (!a || !b) return;
-	Binode temp;
-	if (b->lc) b->lc->pr = a;
-	if (a->lc) a->lc->pr = b;
-	temp = a->lc;
-	a->lc = b->lc;
-	b->lc = temp;
-	if (b->rc) b->rc->pr = a;
-	if (a->rc) a->rc->pr = b;
-	temp = a->rc;
-	a->rc = b->rc;
-	b->rc = temp;
-	if (b->pr) {
-		if (b == b->pr->lc) {
-			b->pr->lc = a;
-		} else {
-			b->pr->rc = a;
-		}
-	}
-	if (a->pr) {
-		if (a == a->pr->lc) {
-			a->pr->lc = b;
-		} else {
-			a->pr->rc = b;
-		}
-	}
-	temp = a->pr;
-	a->pr = b->pr;
-	b->pr = temp;
-}
-
-#define binode_swap(a, b) do {\
-	binode_swap(a, b);\
-	Binode temp = a;\
-	a = b;\
-	b = temp;\
-} while(0)
 
 Binode binode_locate(Binode node, int key) {
 	while(node && node->key != key) node = key < node->key? node->lc: node->rc;
@@ -385,3 +344,10 @@ Binode _btree_delete(Binode node, int key) {
 #define btree_delete(node, key) do {\
 	node = _btree_delete(node, key);\
 } while(0)
+
+#undef BINODE_BACKSERT
+#undef BINODE_INSERT
+#undef BINODE_RESET_PR
+#undef NODE_SIBLING
+#undef NODE_SET_SIBLING
+#undef NODE_BALANCE
