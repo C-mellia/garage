@@ -11,12 +11,10 @@
 int main(void) {
 	setup_env();
 	Binode root = binode_new(0);
-	binode_insert(root, 1);
-	binode_insert(root, 2);
-	binode_insert(root, 3);
-	binode_insert(root, 4);
-	binode_insert(root, 5);
-	root = binode_root(root);
+	for (int i = 0; i < 10; ++i) {
+		btree_insert(root, i);
+	}
+	// btree_delete(root, 5);
 	// binode_ll_insert(root, binode_new(1));
 	// binode_ll_insert(root, binode_new(2));
 	// binode_ll_insert(root, binode_new(3));
@@ -24,7 +22,6 @@ int main(void) {
 	// binode_rl_insert(root, binode_new(5));
 
 	Binode begin = preorder_begin(root), end = preorder_end(root);
-	printf("%p %p\n", begin, end);
 	while(begin != end) {
 		binode_print(begin);
 		begin = preorder_next(begin);
