@@ -52,35 +52,35 @@ void setup_env(void);
 void handle_signal(int sig);
 void cleanup(void);
 
-GlobAlloc glob_new(size_t cap);
-void *glob_alloc(GlobAlloc g, size_t bytes);
-void glob_push(GlobAlloc g);
-void glob_pop(GlobAlloc g);
-int glob_stack_empty(GlobAlloc g);
-void glob_cleanup(GlobAlloc g);
+GlobAlloc sa_new(size_t cap);
+void *sa_alloc(GlobAlloc g, size_t bytes);
+void sa_push(GlobAlloc g);
+void sa_pop(GlobAlloc g);
+int sa_stack_empty(GlobAlloc g);
+void sa_cleanup(GlobAlloc g);
 
 // ## implementation ##
 
 
-GlobAlloc glob_new(size_t cap) {
-    GlobAlloc g = malloc(sizeof *g);
-    code_trap(g, "Failed to initialize global allocator at\n");
+StackAllocator sa_new(size_t cap) {
+    StackAllocator g = malloc(sizeof *g);
+    code_trap(g, "Failed to initialize saal allocator at\n");
     g->mem = malloc(cap);
-    code_trap(g->mem, "Failed to initialize global allocator due to big size memory allocation not supported\n");
+    code_trap(g->mem, "Failed to initialize saal allocator due to big size memory allocation not supported\n");
 	g->off = g->offs + MAX_OFFS;
     g->top = g->mem + cap;
     g->cap = cap;
     return g;
 }
 
-void *glob_alloc(GlobAlloc g, size_t bytes) {
-	if (glob_stack_empty(g) && logfd > 0) {
-		dprintf(logfd, "WARNING: global allocated memory will not be released by glob_pop\n");
+void *sa_alloc(StackAllocator g, size_t bytes) {
+	if (sa_stack_empty(g) && logfd > 0) {
+		dprintf(logfd, "WARNING: saal allocated memory will not be released by glob_pop\n");
 	}
     return g->top < g->mem + bytes? 0: ({g->top -= bytes;});
 }
 
-void glob_pop(GlobAlloc g) {
+void sa_pop(StackAllocator g) {
 	code_trap(g && g->mem, "ERROR: ga not initialized\n");
 	if (g && g->mem) {
 		g->top = g->mem + *g->off;
@@ -88,21 +88,21 @@ void glob_pop(GlobAlloc g) {
 	}
 }
 
-void glob_push(GlobAlloc g) {
+void sa_push(StackAllocator g) {
 	if (g && g->mem) {
 		code_trap(g->off > g->offs, "Global allocator stack overflow\n");
 		*(--g->off) = g->top - g->mem;
 	}
 }
 
-int glob_stack_empty(GlobAlloc g) {
+int sa_stack_empty(StackAllocator g) {
 	return g->off == g->offs + MAX_OFFS;
 }
 
-void glob_cleanup(GlobAlloc g) {
+void sa_cleanup(StackAllocator g) {
     if (g) {
-		if (!glob_stack_empty(g) && logfd > 0) {
-			dprintf(logfd, "WARNING: undefined behavior due to unbalanced glob_push and glob_pop\n");
+		if (!sa_stack_empty(g) && logfd > 0) {
+			dprintf(logfd, "WARNING: undefined behavior due to unbalanced sa_push and glob_pop\n");
 		}
         if (g->mem) free(g->mem);
         free(g);
@@ -112,7 +112,7 @@ void glob_cleanup(GlobAlloc g) {
 void setup_env(void) {
 	signal(SIGABRT, handle_signal);
 	signal(SIGSEGV, handle_signal);
-	ga = glob_new(0x1000);
+	ga = sa_new(0x1000);
 	if (app.logfname) {
 		logfd = open(app.logfname, 
 				O_WRONLY | O_CREAT | O_TRUNC, 
@@ -136,7 +136,7 @@ void handle_signal(int sig) {
 }
 
 void cleanup(void) {
-	glob_cleanup(ga);
+	sa_cleanup(ga);
 	if (logfd != -1) {
 		close(logfd);
 		if (app.auto_report) {
