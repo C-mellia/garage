@@ -31,24 +31,22 @@
 // ## interface ##
 
 
-typedef struct GlobAlloc {
+typedef struct StackAllocator {
     void *mem, *top;
     size_t cap;
 	size_t offs[MAX_OFFS];
 	size_t *off;
-} *GlobAlloc;
+} *StackAllocator;
 
 typedef struct App {
 	char *logfname;
 	int auto_report;
+	int fallback_to_stderr;
 } App;
 
-GlobAlloc ga = 0;
+StackAllocator ga = 0;
 int logfd = -1;
-App app = {
-	.logfname = "log",
-	.auto_report = 0,
-};
+App app = {0};
 
 void setup_env(void);
 void handle_signal(int sig);
@@ -56,8 +54,9 @@ void cleanup(void);
 
 GlobAlloc glob_new(size_t cap);
 void *glob_alloc(GlobAlloc g, size_t bytes);
-void glob_rewind(GlobAlloc g);
-void glob_set(GlobAlloc g);
+void glob_push(GlobAlloc g);
+void glob_pop(GlobAlloc g);
+int glob_stack_empty(GlobAlloc g);
 void glob_cleanup(GlobAlloc g);
 
 // ## implementation ##
@@ -75,25 +74,36 @@ GlobAlloc glob_new(size_t cap) {
 }
 
 void *glob_alloc(GlobAlloc g, size_t bytes) {
+	if (glob_stack_empty(g) && logfd > 0) {
+		dprintf(logfd, "WARNING: global allocated memory will not be released by glob_pop\n");
+	}
     return g->top < g->mem + bytes? 0: ({g->top -= bytes;});
 }
 
-void glob_rewind(GlobAlloc g) {
+void glob_pop(GlobAlloc g) {
+	code_trap(g && g->mem, "ERROR: ga not initialized\n");
 	if (g && g->mem) {
 		g->top = g->mem + *g->off;
 		++g->off;
 	}
 }
 
-void glob_set(GlobAlloc g) {
+void glob_push(GlobAlloc g) {
 	if (g && g->mem) {
 		code_trap(g->off > g->offs, "Global allocator stack overflow\n");
 		*(--g->off) = g->top - g->mem;
 	}
 }
 
+int glob_stack_empty(GlobAlloc g) {
+	return g->off == g->offs + MAX_OFFS;
+}
+
 void glob_cleanup(GlobAlloc g) {
     if (g) {
+		if (!glob_stack_empty(g) && logfd > 0) {
+			dprintf(logfd, "WARNING: undefined behavior due to unbalanced glob_push and glob_pop\n");
+		}
         if (g->mem) free(g->mem);
         free(g);
     }
@@ -103,7 +113,13 @@ void setup_env(void) {
 	signal(SIGABRT, handle_signal);
 	signal(SIGSEGV, handle_signal);
 	ga = glob_new(0x1000);
-	logfd = open(app.logfname, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	if (app.logfname) {
+		logfd = open(app.logfname, 
+				O_WRONLY | O_CREAT | O_TRUNC, 
+				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	} else if (app.fallback_to_stderr) {
+		logfd = 2;
+	}
 }
 
 void handle_signal(int sig) {
@@ -121,7 +137,7 @@ void handle_signal(int sig) {
 
 void cleanup(void) {
 	glob_cleanup(ga);
-	if (logfd != -1) { 
+	if (logfd != -1) {
 		close(logfd);
 		if (app.auto_report) {
 			execlp("less", "less", app.logfname, (char *)0);
@@ -130,4 +146,3 @@ void cleanup(void) {
 }
 
 #endif // GARAGE_H
-
