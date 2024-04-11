@@ -64,6 +64,7 @@ void sa_diag(StackAllocator sa) {
 void setup_env(void) {
 	signal(SIGABRT, handle_signal);
 	signal(SIGSEGV, handle_signal);
+    signal(SIGINT, handle_signal);
 
 	if (app.logfname) {
 		logfd = open(app.logfname,
@@ -82,13 +83,17 @@ void handle_signal(int sig) {
 	switch(sig) {
 		case SIGABRT:
 			cleanup();
-			break;
+            report("Aborted\n");
+            exit(SIGABRT);
 		case SIGSEGV:
 			cleanup();
-			break;
+            report("Segmentation fault\n");
+            exit(SIGSEGV);
+        case SIGINT:
+            cleanup();
+            report("Interrupted\n");
+            exit(SIGINT);
 	}
-	report("ERROR: signal %d received\n", sig);
-	exit(1);
 }
 
 static inline size_t file_size(const char *fname) {
@@ -107,7 +112,9 @@ void cleanup(void) {
 	if (logfd != -1) {
 		close(logfd);
 		if (app.auto_report && file_size(app.logfname)) {
-            execlp("less", "less", app.logfname, (char *)0);
+            char buf[0x100];
+            sprintf(buf, "less %s", app.logfname);
+            system(buf);
 		}
 	}
 }
