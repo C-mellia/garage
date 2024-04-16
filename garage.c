@@ -136,7 +136,7 @@ void cleanup(void) {
 __attribute__((nonnull(1), format(printf, 1, 2))) void report(const char *msg, ...) {
     va_list args;
     va_start(args, msg);
-    vdprintf(logfd, msg, args);
+    if (logfd >= 0) vdprintf(logfd, msg, args);
     va_end(args);
 }
 
