@@ -2,4 +2,5 @@ build.sh
 log
 main
 libgarage.a
-target
+target/
+test/

@@ -57,8 +57,22 @@ void sa_cleanup(StackAllocator sa) {
     }
 }
 
+static inline double clamp(double val, double bot, double up) {
+	return val > up? up: val < bot? bot: val;
+}
+
 void sa_diag(StackAllocator sa) {
-    report("Usage: %lu bytes\n", sa->mem + sa->cap - sa->top);
+	size_t usage = sa->mem + sa->cap - sa->top;
+	double perc = clamp((double)usage / sa->cap * 100, 0.f, 100.f);
+	if (usage <= 0x400) {
+		report("Usage: %lx bytes, %f%%\n", usage, perc);
+	} else if (usage <= 0x100000) {
+		double mega_bytes = (double)usage / 0x400;
+		report("Usage: %f mega bytes, %f%%\n", mega_bytes, perc);
+	} else {
+		double giga_bytes = (double)usage / 0x100000;
+		report("Usage: %f giga bytes\n, %f%%", giga_bytes, perc);
+	}
 }
 
 void setup_env(void) {
