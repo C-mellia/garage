@@ -129,3 +129,16 @@ __attribute__((nonnull(1), format(printf, 1, 2))) void report(const char *msg, .
 void _abort(void) {
     raise(SIGABRT);
 }
+
+void set_app(
+		char *logfname,
+		int auto_report,
+		int fallback_to_stderr,
+		void (*exec_startup)(void),
+		void (*exec_cleanup)(void)) {
+	app.logfname = logfname;
+	app.auto_report = auto_report;
+	app.fallback_to_stderr = fallback_to_stderr;
+	app.exec_startup = exec_startup;
+	app.exec_cleanup = exec_cleanup;
+}
