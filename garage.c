@@ -23,14 +23,15 @@ StackAllocator sa_new(size_t cap) {
 
 void *sa_alloc(StackAllocator g, size_t bytes) {
 	if (sa_stack_empty(g) && logfd > 0) {
-		report("WARNING: saal allocated memory will not be released by glob_pop\n");
+		report("sa_alloc: empty stack warning\n");
 	}
     return g->top < g->mem + bytes? 0: ({g->top -= bytes;});
 }
 
 void sa_pop(StackAllocator g) {
-	code_trap(g && g->mem, "ERROR: ga not initialized\n");
+	code_trap(g && g->mem, "sa_pop: null\n");
 	if (g && g->mem) {
+        code_trap(sa->off < sa->offs + MAX_OFFS, "sa_pop: stack underflow\n");
 		g->top = g->mem + *g->off;
 		++g->off;
 	}
@@ -38,7 +39,7 @@ void sa_pop(StackAllocator g) {
 
 void sa_push(StackAllocator sa) {
 	if (sa && sa->mem) {
-		code_trap(sa->off > sa->offs, "Global allocator stack overflow\n");
+		code_trap(sa->off >= sa->offs, "sa_push: stack overflow\n");
 		*(--sa->off) = sa->top - sa->mem;
 	}
 }
