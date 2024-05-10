@@ -55,6 +55,7 @@ void *sa_alloc(StackAllocator sa, size_t bytes);
 void sa_push(StackAllocator sa);
 void sa_pop(StackAllocator sa);
 int sa_stack_empty(StackAllocator sa);
+size_t sa_stack_size(StackAllocator sa);
 void sa_cleanup(StackAllocator sa);
 void sa_diag(StackAllocator sa);
 
