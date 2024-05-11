@@ -63,8 +63,11 @@ static inline double clamp(double val, double bot, double up) {
 }
 
 void sa_diag(StackAllocator sa) {
-    if (sa->off == sa->offs + MAX_OFFS) {
+    size_t stack_size = sa_stack_size(sa);
+    if (!stack_size) {
         report("sa_diag: empty stack\n");
+        return;
+    } else if (stack_size == 1) {
         size_t usage = sa->mem + sa->cap - sa->top;
         double perc = clamp((double)usage / sa->cap * 100, 0.f, 100.f);
         if (usage <= 0x400) {
@@ -76,24 +79,24 @@ void sa_diag(StackAllocator sa) {
             double giga_bytes = (double)usage / 0x100000;
             report("Usage: %f giga bytes\n, %f%%", giga_bytes, perc);
         }
-        return;
-    }
-    for (size_t idx = 0; idx < sa_stack_size(sa); ++idx) {
-        size_t usage;
-        if (idx == sa_stack_size(sa) - 1) {
-            usage = sa->mem + sa->off[idx] - sa->top;
-        } else {
-            usage = sa->off[idx + 1] - sa->off[idx];
-        }
-        double perc = clamp((double)usage / sa->cap * 100, 0.f, 100.f);
-        if (usage <= 0x400) {
-            report("stack[%lu] Usage: 0x%lx bytes, %f%%\n", idx, usage, perc);
-        } else if (usage <= 0x100000) {
-            double mega_bytes = (double)usage / 0x400;
-            report("stack[%lu] Usage: %f mega bytes, %f%%\n", idx, mega_bytes, perc);
-        } else {
-            double giga_bytes = (double)usage / 0x100000;
-            report("stack[%lu] Usage: %f giga bytes\n, %f%%", idx, giga_bytes, perc);
+    } else {
+        for (size_t idx = 0; idx < stack_size; ++idx) {
+            size_t usage, stack_idx = stack_size - idx - 1;
+            if (idx == stack_size - 1) {
+                usage = sa->off[stack_idx] + sa->mem - sa->top;
+            } else {
+                usage = sa->off[stack_idx] - sa->off[stack_idx - 1];
+            }
+            double perc = clamp((double)usage / sa->cap * 100, 0.f, 100.f);
+            if (usage <= 0x400) {
+                report("stack[%lu] Usage: 0x%lx bytes, %f%%\n", idx, usage, perc);
+            } else if (usage <= 0x100000) {
+                double mega_bytes = (double)usage / 0x400;
+                report("stack[%lu] Usage: %f mega bytes, %f%%\n", idx, mega_bytes, perc);
+            } else {
+                double giga_bytes = (double)usage / 0x100000;
+                report("stack[%lu] Usage: %f giga bytes\n, %f%%", idx, giga_bytes, perc);
+            }
         }
     }
 }

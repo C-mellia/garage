@@ -1,6 +1,4 @@
-build.sh
 log
 main
 libgarage.a
 target/
-test/
