@@ -11,6 +11,6 @@ function _link_objects {
 }
 
 function _archive {
-	echo "$COMMAND $COMMAND_FLAG lib$TARGET.a $targets"
-	$COMMAND $COMMAND_FLAG lib$TARGET.a $targets
+	echo "$COMMAND $COMMAND_FLAG lib$TARGET.a $*"
+	$COMMAND $COMMAND_FLAG lib$TARGET.a $*
 }
