@@ -7,7 +7,7 @@ extern StackAllocator sa;
 
 RandomEngine re_new(void) {
 	RandomEngine re = sa_alloc(sa, sizeof *re);
-	if (re->fd = open("/dev/null", O_RDONLY), re->fd < 0) {
+	if (re->fd = open("/dev/random", O_RDONLY), re->fd < 0) {
 		perror("open");
 		panic("");
 	}

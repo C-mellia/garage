@@ -15,6 +15,11 @@ SRC_FILES='garage random'
 
 source build_util
 
+function comp_error {
+	echo "ERROR: Failed to build $1, exiting..."
+	exit 1
+}
+
 for fname in $SRC_FILES; do
-	[[ -f $SRC/$fname.$SRC_EXT ]] && _compile $SRC/$fname.$SRC_EXT target/$fname.$OBJ_EXT || echo "ERROR: Failed to build $fname, exiting..."
+	_compile $SRC/$fname.$SRC_EXT target/$fname.$OBJ_EXT || comp_error $fname
 done

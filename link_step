@@ -12,4 +12,9 @@ TARGET='garage'
 
 source ./build_util
 
-_archive `for file in ./target/*.$OBJ_EXT; do echo $file; done` && chmod +x libgarage.a || echo "ERROR: Failed to link"
+function link_error {
+	echo "ERROR: Failed to link"
+	exit 1
+}
+
+(_archive `for file in ./target/*.$OBJ_EXT; do echo $file; done` && chmod +x libgarage.a) || link_error
