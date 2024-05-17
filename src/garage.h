@@ -40,12 +40,8 @@ typedef struct {
     void (*exec_cleanup)(void);
 } App;
 
-extern int logfd;
-extern App app;
-
 void set_app(char *logfname, int auto_report, int fallback_to_stderr, void (*exec_startup)(void), void (*exec_cleanup)(void));
 void setup_env(void);
-void handle_signal(int sig);
 void cleanup(void);
 void report(const char *msg, ...);
 void _abort(void);

@@ -7,8 +7,25 @@
 #include <sys/stat.h>
 #include "garage.h"
 
-int logfd = -1;
-App app = {0};
+static int logfd = -1;
+static App app = {0};
+
+static inline void handle_signal(int sig) {
+    switch(sig) {
+        case SIGABRT:
+            cleanup();
+            report("Aborted\n");
+            exit(SIGABRT);
+        case SIGSEGV:
+            cleanup();
+            report("Segmentation fault\n");
+            exit(SIGSEGV);
+        case SIGINT:
+            cleanup();
+            report("Interrupted\n");
+            exit(SIGINT);
+    }
+}
 
 StackAllocator sa_new(size_t cap) {
     StackAllocator sa = malloc(sizeof *sa);
@@ -116,23 +133,6 @@ void setup_env(void) {
 
     if (app.exec_startup) {
         app.exec_startup();
-    }
-}
-
-void handle_signal(int sig) {
-    switch(sig) {
-        case SIGABRT:
-            cleanup();
-            report("Aborted\n");
-            exit(SIGABRT);
-        case SIGSEGV:
-            cleanup();
-            report("Segmentation fault\n");
-            exit(SIGSEGV);
-        case SIGINT:
-            cleanup();
-            report("Interrupted\n");
-            exit(SIGINT);
     }
 }
 
