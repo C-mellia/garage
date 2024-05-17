@@ -1,4 +1,4 @@
-log
-main
-libgarage.a
 target/
+main
+test/
+libgarage.a

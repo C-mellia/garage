@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# configuration of buildling process
+
+# object extension
+OBJ_EXT='o'
+# select which compiler to use
+COMMAND=ar
+# send flags to compiler
+COMMAND_FLAG='-rs'
+TARGET='garage'
+
+source ./build_util
+
+_archive `for file in ./target/*.$OBJ_EXT; do echo $file; done` && chmod +x libgarage.a || echo "ERROR: Failed to link"

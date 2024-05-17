@@ -1,0 +1,16 @@
+#!/bin/bash
+
+function _compile {
+	echo "$COMMAND -o $2 $COMMAND_FLAG -c $1"
+	$COMMAND -o $2 $COMMAND_FLAG -c $1
+}
+
+function _link_objects {
+	echo "$COMMAND $* -o $TARGET $COMMAND_FLAG"
+	$COMMAND $* -o $TARGET $COMMAND_FLAG
+}
+
+function _archive {
+	echo "$COMMAND $COMMAND_FLAG lib$TARGET.a $targets"
+	$COMMAND $COMMAND_FLAG lib$TARGET.a $targets
+}

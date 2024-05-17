@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# extension of source files
+SRC_EXT='c'
+# object extension
+OBJ_EXT='o'
+# source directory of c-files to be searched
+SRC='src'
+# select which compiler to use
+COMMAND=gcc
+# send flags to compiler
+COMMAND_FLAG='-Wall -Wextra -std=gnu11'
+# libraries to link or send flags to linker, if link step is necessary
+SRC_FILES='garage random'
+
+source build_util
+
+for fname in $SRC_FILES; do
+	[[ -f $SRC/$fname.$SRC_EXT ]] && _compile $SRC/$fname.$SRC_EXT target/$fname.$OBJ_EXT || echo "ERROR: Failed to build $fname, exiting..."
+done
