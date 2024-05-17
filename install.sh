@@ -6,6 +6,5 @@ if [[ $(sudo -v) -eq 1 ]]; then
     echo "Root permission required"
     exit 1
 fi
-sudo cp binode.h /usr/include/garage/
-sudo cp garage.h /usr/include/garage/
-sudo cp libgarage.a /usr/lib/
+sudo cp --update garage.h /usr/include/garage/
+sudo cp --update libgarage.a /usr/lib/

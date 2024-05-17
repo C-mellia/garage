@@ -25,14 +25,14 @@
 // ## interface ##
 
 
-typedef struct StackAllocator {
+typedef struct {
     void *mem, *top;
     size_t cap;
 	size_t offs[MAX_OFFS];
 	size_t *off;
 } *StackAllocator;
 
-typedef struct App {
+typedef struct {
 	char *logfname;
 	int auto_report;
 	int fallback_to_stderr;

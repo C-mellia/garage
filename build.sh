@@ -2,7 +2,7 @@
 CC=gcc
 CC_FLAG='-Wall -Wextra -std=gnu11'
 FD_FLAG=''
-CFILES='binode garage'
+CFILES='garage'
 
 if [[ ! -d target ]]; then
     mkdir target
