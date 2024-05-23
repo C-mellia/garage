@@ -9,7 +9,7 @@ SRC='src'
 # select which compiler to use
 COMMAND=gcc
 # send flags to compiler
-COMMAND_FLAG='-Wall -Wextra -std=gnu11'
+COMMAND_FLAG='-Wall -Wextra -std=gnu11 -fPIC'
 # libraries to link or send flags to linker, if link step is necessary
 SRC_FILES='garage random'
 
