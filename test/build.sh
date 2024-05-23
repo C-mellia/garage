@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CC=gcc
-CC_FLAG='-Wall -Wextra -std=gnu11 -I../'
+CC_FLAG='-Wall -Wextra -std=gnu11 -I../src/'
 LD_FLAG='-L../ -lgarage'
 CFILES='main'
 SRC='src'
