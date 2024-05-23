@@ -16,3 +16,5 @@ function link_error {
 	echo "ERROR: Failed to link"
 	exit 1
 }
+
+(_archive `for file in target/*.o; do echo $file; done` && chmod +x libgarage.a) || link_error

@@ -11,6 +11,16 @@
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static inline void lock() {
+    int ret = pthread_mutex_lock(&mutex);
+    code_trap(ret, "lock\n");
+}
+
+static inline void unlock() {
+    int ret = pthread_mutex_unlock(&mutex);
+    code_trap(ret, "unlock\n");
+}
+
 static int logfd = -1;
 static App app = {0};
 
@@ -45,21 +55,28 @@ void *sa_alloc(StackAllocator sa, size_t bytes) {
     if (sa_stack_empty(sa) && logfd > 0) {
         report("sa_alloc: empty stack warning\n");
     }
-    return sa->top < sa->mem + bytes? 0: ({sa->top -= bytes;});
+    lock();
+    void *res = sa->top < sa->mem + bytes? 0: (sa->top -= bytes);
+    unlock();
+    return res;
 }
 
 void sa_pop(StackAllocator sa) {
     code_trap(sa && sa->mem, "sa_pop: null\n");
     if (sa && sa->mem) {
         code_trap(sa->off != sa->offs + MAX_OFFS, "sa_pop: stack underflow\n");
+        lock();
         sa->top = sa->mem + *sa->off++;
+        unlock();
     }
 }
 
 void sa_push(StackAllocator sa) {
     if (sa && sa->mem) {
         code_trap(sa->off > sa->offs, "sa_push: stack overflow\n");
+        lock();
         *(--sa->off) = sa->top - sa->mem;
+        unlock();
     }
 }
 
