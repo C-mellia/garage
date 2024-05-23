@@ -4,8 +4,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include "garage.h"
+#include <pthread.h>
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int logfd = -1;
 static App app = {0};
@@ -28,10 +32,9 @@ static inline void handle_signal(int sig) {
 }
 
 StackAllocator sa_new(size_t cap) {
-    StackAllocator sa = malloc(sizeof *sa);
+    StackAllocator sa = mmap(0, sizeof *sa + cap, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     code_trap(sa, "sa_new: null\n");
-    sa->mem = malloc(cap);
-    code_trap(sa->mem, "sa_new: null\n");
+    sa->mem = sa + 1;
     sa->off = sa->offs + MAX_OFFS;
     sa->top = sa->mem + cap;
     sa->cap = cap;
@@ -70,8 +73,7 @@ void sa_cleanup(StackAllocator sa) {
         if (!sa_stack_empty(sa) && logfd > 0) {
             report("sa_cleanup: unmaching push and pop\n");
         }
-        if (sa->mem) free(sa->mem);
-        free(sa);
+        munmap(sa, sizeof *sa + sa->cap);
     }
 }
 
