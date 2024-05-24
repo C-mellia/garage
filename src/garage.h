@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <pthread.h>
 
 // ## macros ##
 
@@ -30,6 +31,7 @@ typedef struct {
     size_t cap;
 	size_t offs[MAX_OFFS];
 	size_t *off;
+    pthread_mutex_t m;
 } *StackAllocator;
 
 typedef struct {

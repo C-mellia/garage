@@ -2,7 +2,7 @@
 
 CC=gcc
 CC_FLAG='-Wall -Wextra -std=gnu11 -I../src/'
-LD_FLAG='-L../ -lgarage'
+LD_FLAG='-L../ -lgarage -lpthread'
 CFILES='main'
 SRC='src'
 

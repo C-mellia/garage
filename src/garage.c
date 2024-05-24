@@ -9,18 +9,6 @@
 #include "garage.h"
 #include <pthread.h>
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static inline void lock() {
-    int ret = pthread_mutex_lock(&mutex);
-    code_trap(ret, "lock\n");
-}
-
-static inline void unlock() {
-    int ret = pthread_mutex_unlock(&mutex);
-    code_trap(ret, "unlock\n");
-}
-
 static int logfd = -1;
 static App app = {0};
 
@@ -48,6 +36,7 @@ StackAllocator sa_new(size_t cap) {
     sa->off = sa->offs + MAX_OFFS;
     sa->top = sa->mem + cap;
     sa->cap = cap;
+    code_trap(pthread_mutex_init(&sa->m, 0) == 0, "sa_new: mutex init\n");
     return sa;
 }
 
@@ -55,9 +44,9 @@ void *sa_alloc(StackAllocator sa, size_t bytes) {
     if (sa_stack_empty(sa) && logfd > 0) {
         report("sa_alloc: empty stack warning\n");
     }
-    lock();
+    code_trap(pthread_mutex_lock(&sa->m) == 0, "sa_alloc: mutex lock\n");
     void *res = sa->top < sa->mem + bytes? 0: (sa->top -= bytes);
-    unlock();
+    code_trap(pthread_mutex_unlock(&sa->m) == 0, "sa_alloc: mutex unlock\n");
     return res;
 }
 
@@ -65,18 +54,18 @@ void sa_pop(StackAllocator sa) {
     code_trap(sa && sa->mem, "sa_pop: null\n");
     if (sa && sa->mem) {
         code_trap(sa->off != sa->offs + MAX_OFFS, "sa_pop: stack underflow\n");
-        lock();
+        code_trap(pthread_mutex_lock(&sa->m) == 0, "sa_pop: mutex lock\n");
         sa->top = sa->mem + *sa->off++;
-        unlock();
+        code_trap(pthread_mutex_unlock(&sa->m) == 0, "sa_pop: mutex unlock\n");
     }
 }
 
 void sa_push(StackAllocator sa) {
     if (sa && sa->mem) {
         code_trap(sa->off > sa->offs, "sa_push: stack overflow\n");
-        lock();
+        code_trap(pthread_mutex_lock(&sa->m) == 0, "sa_push: mutex lock\n");
         *(--sa->off) = sa->top - sa->mem;
-        unlock();
+        code_trap(pthread_mutex_unlock(&sa->m) == 0, "sa_push: mutex unlock\n");
     }
 }
 
@@ -87,6 +76,7 @@ int sa_stack_empty(StackAllocator sa) {
 
 void sa_cleanup(StackAllocator sa) {
     if (sa) {
+        code_trap(pthread_mutex_destroy(&sa->m) == 0, "sa_cleanup: mutex destroy\n");
         if (!sa_stack_empty(sa) && logfd > 0) {
             report("sa_cleanup: unmaching push and pop\n");
         }
