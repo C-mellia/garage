@@ -12,6 +12,10 @@
 static int logfd = -1;
 static App app = {0};
 
+typedef void (*handle_func)(int);
+
+static handle_func handle_abrt = 0, handle_segv = 0, handle_int = 0;
+
 static inline void handle_signal(int sig) {
     switch(sig) {
         case SIGABRT:
@@ -131,9 +135,9 @@ void sa_diag(StackAllocator sa) {
 }
 
 void setup_env(void) {
-    signal(SIGABRT, handle_signal);
-    signal(SIGSEGV, handle_signal);
-    signal(SIGINT, handle_signal);
+    handle_abrt = signal(SIGABRT, handle_signal);
+    handle_segv = signal(SIGSEGV, handle_signal);
+    handle_int = signal(SIGINT, handle_signal);
     signal(SIGUSR1, handle_signal);
 
     if (app.logfname) {
@@ -158,6 +162,10 @@ static inline size_t file_size(const char *fname) {
 }
 
 void cleanup(void) {
+    // Note: restore original handle functions in case handling signals multiple times
+    signal(SIGABRT, handle_abrt);
+    signal(SIGSEGV, handle_segv);
+    signal(SIGINT, handle_int);
     if (app.exec_cleanup) {
         app.exec_cleanup();
     }
