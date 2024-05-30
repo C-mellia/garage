@@ -8,8 +8,12 @@
 // ## macros ##
 
 
+#ifndef GARAGE_RELEASE
 #define code_probe() \
-    report("INFO: probing into code at file: %s(%d):%s\n", __FILE__, __LINE__, __FUNCTION__)\
+    report("INFO: probing into code at file: %s(%d):%s\n", __FILE__, __LINE__, __FUNCTION__)
+#else // GARAGE_RELEASE
+#define code_probe()
+#endif // GARAGE_RELEASE
 
 #define code_trap(cond, msg, ...) \
 	if (!(cond)) panic(msg, ##__VA_ARGS__)
@@ -47,6 +51,7 @@ void setup_env(void);
 void cleanup(void);
 void report(const char *msg, ...);
 void _abort(void);
+void gracefully_exit(void);
 
 StackAllocator sa_new(size_t cap);
 void *sa_alloc(StackAllocator sa, size_t bytes);

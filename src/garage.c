@@ -26,6 +26,9 @@ static inline void handle_signal(int sig) {
             cleanup();
             report("Interrupted\n");
             exit(SIGINT);
+        case SIGUSR1:
+            cleanup();
+            exit(0);
     }
 }
 
@@ -131,6 +134,7 @@ void setup_env(void) {
     signal(SIGABRT, handle_signal);
     signal(SIGSEGV, handle_signal);
     signal(SIGINT, handle_signal);
+    signal(SIGUSR1, handle_signal);
 
     if (app.logfname) {
         logfd = open(app.logfname,
@@ -195,4 +199,8 @@ void set_app(
 size_t sa_stack_size(StackAllocator sa) {
     code_trap(sa, "sa_stack_size: null\n");
     return sa->offs + MAX_OFFS -  sa->off;
+}
+
+void gracefully_exit(void) {
+    raise(SIGUSR1);
 }
