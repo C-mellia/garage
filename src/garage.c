@@ -33,6 +33,7 @@ static inline void handle_signal(int sig) {
         case SIGUSR1:
             cleanup();
             exit(0);
+        default:;
     }
 }
 

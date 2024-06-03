@@ -1,8 +1,13 @@
 #!/bin/bash
+
+function echo_cp {
+    echo "cp --update $1 $2"
+    sudo cp --update $1 $2
+}
+
 [[ -d /usr/include/garage ]] || sudo mkdir /usr/include/garage
-echo "cp --update src/garage.h /usr/include/garage/"
-sudo cp --update src/garage.h /usr/include/garage/
-echo "cp --update src/random.h /usr/include/garage/"
-sudo cp --update src/random.h /usr/include/garage/
-echo "cp --update libgarage.a /usr/lib/"
-sudo cp --update libgarage.a /usr/lib/
+
+echo_cp src/garage.h /usr/include/garage/
+echo_cp src/random.h /usr/include/garage/
+echo_cp src/array.h /usr/include/garage/
+echo_cp libgarage.a /usr/lib/
