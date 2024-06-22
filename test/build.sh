@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CC=gcc
-CC_FLAG='-Wall -Wextra -std=gnu11 -I../src/'
+CC_FLAG='-Wall -Wextra -std=gnu11 -I../include/'
 LD_FLAG='-L../ -lgarage -lpthread'
 CFILES='main'
 SRC='src'

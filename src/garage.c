@@ -2,12 +2,14 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "garage.h"
 #include <pthread.h>
+
+#include <garage/garage.h>
 
 static int logfd = -1;
 static App app = {0};

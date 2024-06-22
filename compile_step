@@ -1,25 +1,8 @@
 #!/bin/bash
 
-# extension of source files
-SRC_EXT='c'
-# object extension
-OBJ_EXT='o'
-# source directory of c-files to be searched
-SRC='src'
-# select which compiler to use
-COMMAND=gcc
-# send flags to compiler
-COMMAND_FLAG='-Wall -Wextra -std=gnu11 -fPIC'
-# libraries to link or send flags to linker, if link step is necessary
-SRC_FILES='garage random array'
+CC=gcc
+CC_FLAG='-Wall -Wextra -std=gnu11 -fPIC -Iinclude'
 
-source build_util
-
-function comp_error {
-	echo "ERROR: Failed to build $1, exiting..."
-	exit 1
-}
-
-for fname in $SRC_FILES; do
-	_compile $SRC/$fname.$SRC_EXT target/$fname.$OBJ_EXT || comp_error $fname
-done
+while read -r fname; do
+    [[ -f src/$fname.c ]] && step_exec "$CC -o target/$fname.o -c src/$fname.c $CC_FLAG" "Failed to compile $fname.c"
+done <<< $SRC_FILES

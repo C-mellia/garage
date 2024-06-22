@@ -1,7 +1,8 @@
-#include "garage.h"
-#include "random.h"
 #include <unistd.h>
 #include <fcntl.h>
+
+#include <garage/garage.h>
+#include <garage/random.h>
 
 extern StackAllocator sa;
 

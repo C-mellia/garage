@@ -1,20 +1,3 @@
 #!/bin/bash
 
-# configuration of buildling process
-
-# object extension
-OBJ_EXT='o'
-# select which compiler to use
-COMMAND=ar
-# send flags to compiler
-COMMAND_FLAG='-rs'
-TARGET='garage'
-
-source ./build_util
-
-function link_error {
-	echo "ERROR: Failed to link"
-	exit 1
-}
-
-(_archive `for file in target/*.o; do echo $file; done` && chmod +x libgarage.a) || link_error
+step_exec "ar -rcs libgarage.a `while read -r fname; do echo target/$fname.o; done <<< $SRC_FILES` && chmod +x libgarage.a" "Failed to archive static library libgarage.a"

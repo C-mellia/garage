@@ -1,7 +1,11 @@
 #include <stdio.h>
+#include <string.h>
+
 #include <pthread.h>
-#include <garage.h>
-#include <array.h>
+
+#include <garage/deque.h>
+#include <garage/array.h>
+#include <garage/garage.h>
 
 void nest_startup(void);
 void nest_cleanup(void);
@@ -23,17 +27,24 @@ void nest_startup(void) {
 }
 
 void nest_cleanup(void) {
-    // sa_pop(sa);
     sa_pop(sa);
     sa_cleanup(sa);
 }
 
-void body(void) {
-    Array arr = 0;
-    arr = arr_new(sizeof (int));
-    for (int i = 0; i < 10; ++i) {
-        arr_push_back(arr, &i);
+static void deque_int_print(Deque dq) {
+    for (size_t i = 0; i < dq->len; ++i) {
+        int *p = deque_get(dq, i);
+        printf("%d\n", *p);
     }
-    printf("%lu\n", arr->len);
-    arr_cleanup(arr);
+}
+
+void body(void) {
+    Deque dq = deque_new(sizeof (int));
+    int val;
+    for (size_t i = 0; i < 100; ++i) {
+        val = i, deque_push_back(dq, &val);
+        deque_deb_print(dq);
+        printf("%p\n", deque_pop_front(dq));
+    }
+    deque_cleanup(dq);
 }

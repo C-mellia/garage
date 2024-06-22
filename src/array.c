@@ -1,8 +1,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "array.h"
-#include "garage.h"
+#include <garage/array.h>
+#include <garage/garage.h>
 
 static inline void arr_realloc(Array arr, size_t cap) {
     void *new_mem = malloc(cap * arr->layout);
@@ -37,17 +37,17 @@ void *arr_get(Array arr, size_t idx) {
     return idx < arr->len? arr->mem + idx * arr->layout: 0;
 }
 
-void arr_push_back(Array arr, void *data) {
+void *arr_push_back(Array arr, void *data) {
     code_trap(arr && data, "arr_push_back: null\n");
     arr_check_cap(arr, arr->len + 1);
-    memcpy(arr->mem + arr->len++ * arr->layout, data, arr->layout);
+    return memcpy(arr->mem + arr->len++ * arr->layout, data, arr->layout);
 }
 
-void arr_push_front(Array arr, void *data) {
+void *arr_push_front(Array arr, void *data) {
     code_trap(arr && data, "arr_push_front: null\n");
     arr_check_cap(arr, arr->len + 1);
     memmove(arr->mem + arr->layout, arr->mem, arr->len++ * arr->layout);
-    memcpy(arr->mem, data, arr->layout);
+    return memcpy(arr->mem, data, arr->layout);
 }
 
 void *arr_pop_back(Array arr) {
@@ -103,4 +103,34 @@ void arr_deb_print(Array arr) {
         printf("{mem: %p, len: %lu, cap: %lu, layout: %lu}\n",
                arr->mem, arr->len, arr->cap, arr->layout);
     }
+}
+
+void arr_reserve(Array arr, size_t cap) {
+    code_trap(arr, "arr_reserve: null\n");
+    arr_check_cap(arr, arr->cap + cap);
+}
+
+void arr_resize(Array arr, size_t len, void *data) {
+    code_trap(arr, "arr_resize: null\n");
+    arr_check_cap(arr, len);
+    if (len > arr->len) {
+        if (data) {
+            for (size_t i = 0 ; i < len - arr->len; ++i) {
+                memcpy(arr->mem + (arr->len + i) * arr->layout, data, arr->layout);
+            }
+        } else {
+            memset(arr->mem + arr->len * arr->layout, 0, (len - arr->len) * arr->layout);
+        }
+    }
+    arr->len = len;
+}
+
+size_t arr_len(Array arr) {
+    code_trap(arr, "arr_len: null\n");
+    return arr->len;
+}
+
+size_t arr_layout(Array arr) {
+    code_trap(arr, "arr_layout: null\n");
+    return arr->layout;
 }

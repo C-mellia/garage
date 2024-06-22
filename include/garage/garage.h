@@ -1,5 +1,5 @@
 #ifndef GARAGE_H
-#define GARAGE_H 0
+#define GARAGE_H 1
 
 #include <stdio.h>
 #include <stdint.h>
@@ -7,6 +7,7 @@
 
 // ## macros ##
 
+#define deref(Type, ptr) *(Type *)ptr
 
 #ifndef GARAGE_RELEASE
 #define code_probe() \

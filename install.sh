@@ -1,13 +1,18 @@
 #!/bin/bash
 
-function echo_cp {
-    echo "cp --update $1 $2"
-    sudo cp --update $1 $2
+function step_failed {
+    echo $* && exit 1
 }
 
-[[ -d /usr/include/garage ]] || sudo mkdir /usr/include/garage
+function step_exec {
+    echo $1 && eval $1 || step_failed $2
+}
 
-echo_cp src/garage.h /usr/include/garage/
-echo_cp src/random.h /usr/include/garage/
-echo_cp src/array.h /usr/include/garage/
-echo_cp libgarage.a /usr/lib/
+export -f step_failed
+export -f step_exec
+
+[[ -d /usr/include/garage ]] || sudo mkdir -p /usr/include/garage
+
+step_exec "sudo cp -r --update include/garage /usr/include/" "Failed to install directory and inside which the headers 'include/garage'"
+
+step_exec "sudo cp --update ./libgarage.a /usr/lib/"
