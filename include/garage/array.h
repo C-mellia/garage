@@ -13,9 +13,11 @@ Array arr_new(size_t layout);
 void arr_cleanup(Array arr);
 void *arr_get(Array arr, size_t idx);
 void arr_reserve(Array arr, size_t cap);
-void arr_resize(Array arr, size_t len, void *data);
+int arr_resize(Array arr, size_t len, void *data);
 size_t arr_len(Array arr);
 size_t arr_layout(Array arr);
+Array arr_clone(Array arr);
+int arr_interp(Array arr, size_t layout);
 
 void *arr_push_back(Array arr, void *data);
 void *arr_push_front(Array arr, void *data);

@@ -1,8 +1,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <unistd.h>
+
 #include <garage/array.h>
 #include <garage/garage.h>
+
+static inline size_t cap_inc(size_t cap) {
+    return cap? cap * 2: 10;
+}
 
 static inline void arr_realloc(Array arr, size_t cap) {
     void *new_mem = malloc(cap * arr->layout);
@@ -11,13 +17,15 @@ static inline void arr_realloc(Array arr, size_t cap) {
     free(arr->mem), arr->mem = new_mem, arr->cap = cap;
 }
 
-static inline void arr_check_cap(Array arr, size_t len) {
+static inline int arr_check_cap(Array arr, size_t len) {
     size_t cap = arr->cap;
-    while(cap < len) cap = cap? cap * 2: 10;
-    if (cap != arr->cap) arr_realloc(arr, cap);
+    while(cap < len) cap = cap_inc(cap);
+    if (cap != arr->cap) return arr_realloc(arr, cap), 0;
+    return -1;
 }
 
 Array arr_new(size_t layout) {
+    if (!layout) return 0;
     Array arr = malloc(sizeof *arr);
     code_trap(arr, "arr_new: null\n");
     memset(arr, 0, sizeof *arr);
@@ -110,19 +118,17 @@ void arr_reserve(Array arr, size_t cap) {
     arr_check_cap(arr, arr->cap + cap);
 }
 
-void arr_resize(Array arr, size_t len, void *data) {
+// return 0 if recapped otherwise -1
+// set increased memory with provided data offsetted by arr's layout, if data is not null
+int arr_resize(Array arr, size_t len, void *data) {
     code_trap(arr, "arr_resize: null\n");
-    arr_check_cap(arr, len);
-    if (len > arr->len) {
-        if (data) {
-            for (size_t i = 0 ; i < len - arr->len; ++i) {
-                memcpy(arr->mem + (arr->len + i) * arr->layout, data, arr->layout);
-            }
-        } else {
-            memset(arr->mem + arr->len * arr->layout, 0, (len - arr->len) * arr->layout);
+    int res = arr_check_cap(arr, len);
+    if (data && len > arr->len) {
+        for (size_t i = arr->len; i < len; ++i) {
+            memcpy(arr_get(arr, i), data, arr->layout);
         }
     }
-    arr->len = len;
+    return arr->len = len, res;
 }
 
 size_t arr_len(Array arr) {
@@ -133,4 +139,22 @@ size_t arr_len(Array arr) {
 size_t arr_layout(Array arr) {
     code_trap(arr, "arr_layout: null\n");
     return arr->layout;
+}
+
+Array arr_clone(Array arr) {
+    Array new_arr;
+    if (!arr) return 0;
+    new_arr = arr_new(arr->layout);
+    if (arr_check_cap(new_arr, arr->len)) {
+        memcpy(new_arr->mem, arr->mem, arr->len * arr->layout);
+        new_arr->len = arr->len;
+    }
+    return new_arr;
+}
+
+int arr_interp(Array arr, size_t layout) {
+    code_trap(arr, "arr_reinterpret: null\n");
+    if (!layout || arr->layout == layout) return -1;
+    arr->len = (arr->len * arr->layout + layout - 1) / layout, arr->layout = layout;
+    return 0;
 }

@@ -34,21 +34,20 @@
 typedef struct {
     void *mem, *top;
     size_t cap;
-	size_t offs[MAX_OFFS];
-	size_t *off;
+    size_t offs[MAX_OFFS];
+    size_t *off;
     pthread_mutex_t m;
 } *StackAllocator;
 
 typedef struct {
-	char *logfname;
-	int auto_report;
-	int fallback_to_stderr;
+    char *logfname;
+    int auto_report;
+    int fallback_to_stderr;
     void (*exec_startup)(void);
     void (*exec_cleanup)(void);
-} App;
+} *App;
 
-void set_app(char *logfname, int auto_report, int fallback_to_stderr, void (*exec_startup)(void), void (*exec_cleanup)(void));
-void setup_env(void);
+void setup_env(char *logfname, int auto_report, int fallback_to_stderr, void (*exec_startup)(void), void (*exec_cleanup)(void));
 void cleanup(void);
 void report(const char *msg, ...);
 void _abort(void);

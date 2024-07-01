@@ -3,9 +3,9 @@
 
 #include <pthread.h>
 
-#include <garage/deque.h>
-#include <garage/array.h>
 #include <garage/garage.h>
+#include <garage/array.h>
+#include <garage/ascii.h>
 
 void nest_startup(void);
 void nest_cleanup(void);
@@ -14,8 +14,7 @@ void body(void);
 StackAllocator sa = 0;
 
 int main(void) {
-    set_app("log", 1, 1, nest_startup, nest_cleanup);
-    setup_env();
+    setup_env("log", 1, 1, nest_startup, nest_cleanup);
     body();
     cleanup();
     return 0;
@@ -31,20 +30,9 @@ void nest_cleanup(void) {
     sa_cleanup(sa);
 }
 
-static void deque_int_print(Deque dq) {
-    for (size_t i = 0; i < dq->len; ++i) {
-        int *p = deque_get(dq, i);
-        printf("%d\n", *p);
-    }
-}
-
 void body(void) {
-    Deque dq = deque_new(sizeof (int));
-    int val;
-    for (size_t i = 0; i < 100; ++i) {
-        val = i, deque_push_back(dq, &val);
-        deque_deb_print(dq);
-        printf("%p\n", deque_pop_front(dq));
-    }
-    deque_cleanup(dq);
+    printf("%d\n", !0);
+    // for (uint8_t ch = 0; ch < 0x80; ++ch) {
+    //     printf("\\%o -> %s\n", ch, ascii_cat_format(ch_cat(ch)));
+    // }
 }

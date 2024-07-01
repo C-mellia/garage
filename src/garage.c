@@ -12,7 +12,7 @@
 #include <garage/garage.h>
 
 static int logfd = -1;
-static App app = {0};
+static App app = 0;
 
 typedef void (*handle_func)(int);
 
@@ -137,23 +137,34 @@ void sa_diag(StackAllocator sa) {
     }
 }
 
-void setup_env(void) {
+void setup_env(
+    char *logfname,
+    int auto_report,
+    int fallback_to_stderr,
+    void (*exec_startup)(void),
+    void (*exec_cleanup)(void)
+) {
+    if (app = malloc(sizeof *app), !app) exit(127);
+    app->logfname = logfname;
+    app->auto_report = auto_report;
+    app->fallback_to_stderr = fallback_to_stderr;
+    app->exec_startup = exec_startup;
+    app->exec_cleanup = exec_cleanup;
+
     handle_abrt = signal(SIGABRT, handle_signal);
     handle_segv = signal(SIGSEGV, handle_signal);
     handle_int = signal(SIGINT, handle_signal);
     signal(SIGUSR1, handle_signal);
 
-    if (app.logfname) {
-        logfd = open(app.logfname,
+    if (app->logfname) {
+        logfd = open(app->logfname,
                 O_WRONLY | O_CREAT | O_TRUNC,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    } else if (app.fallback_to_stderr) {
+    } else if (app->fallback_to_stderr) {
         logfd = 2;
     }
 
-    if (app.exec_startup) {
-        app.exec_startup();
-    }
+    if (app->exec_startup) app->exec_startup();
 }
 
 static inline size_t file_size(const char *fname) {
@@ -169,18 +180,18 @@ void cleanup(void) {
     signal(SIGABRT, handle_abrt);
     signal(SIGSEGV, handle_segv);
     signal(SIGINT, handle_int);
-    if (app.exec_cleanup) {
-        app.exec_cleanup();
-    }
+    if (!app) return;
+    if (app->exec_cleanup) app->exec_cleanup();
 
     if (logfd != -1) {
         close(logfd);
-        if (app.auto_report && file_size(app.logfname)) {
+        if (app->auto_report && file_size(app->logfname)) {
             char buf[0x100];
-            sprintf(buf, "less %s", app.logfname);
+            sprintf(buf, "less %s", app->logfname);
             system(buf);
         }
     }
+    free(app);
 }
 
 __attribute__((nonnull(1), format(printf, 1, 2))) void report(const char *msg, ...) {
@@ -192,19 +203,6 @@ __attribute__((nonnull(1), format(printf, 1, 2))) void report(const char *msg, .
 
 void _abort(void) {
     raise(SIGABRT);
-}
-
-void set_app(
-        char *logfname,
-        int auto_report,
-        int fallback_to_stderr,
-        void (*exec_startup)(void),
-        void (*exec_cleanup)(void)) {
-    app.logfname = logfname;
-    app.auto_report = auto_report;
-    app.fallback_to_stderr = fallback_to_stderr;
-    app.exec_startup = exec_startup;
-    app.exec_cleanup = exec_cleanup;
 }
 
 size_t sa_stack_size(StackAllocator sa) {

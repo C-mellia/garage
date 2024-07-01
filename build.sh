@@ -12,7 +12,9 @@ SRC_FILES='garage
 random
 array
 http
-deque'
+deque
+ascii
+alc'
 
 export SRC_FILES
 export -f step_error
