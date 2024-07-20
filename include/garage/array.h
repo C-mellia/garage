@@ -27,7 +27,7 @@ void *arr_pop_front(Array arr);
 void *arr_front(Array arr);
 void *arr_back(Array arr);
 
-void arr_deb_print(Array arr);
+int arr_deb_print(Array arr);
 
 void *arr_drop(Array arr, size_t idx);
 void *arr_insert(Array arr, size_t idx, void *data);

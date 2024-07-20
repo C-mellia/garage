@@ -52,6 +52,7 @@ void cleanup(void);
 void report(const char *msg, ...);
 void _abort(void);
 void gracefully_exit(void);
+int buffered_printf(const char *fmt, ...);
 
 StackAllocator sa_new(size_t cap);
 void *sa_alloc(StackAllocator sa, size_t bytes);

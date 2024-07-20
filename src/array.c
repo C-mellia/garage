@@ -104,11 +104,11 @@ void *arr_back(Array arr) {
     return arr->len? arr->mem + arr->layout * (arr->len - 1): 0;
 }
 
-void arr_deb_print(Array arr) {
+int arr_deb_print(Array arr) {
     if (!arr) {
-        printf("(nil)\n");
+        return printf("(nil)");
     } else {
-        printf("{mem: %p, len: %lu, cap: %lu, layout: %lu}\n",
+        return printf("{mem: %p, len: %lu, cap: %lu, layout: %lu}",
                arr->mem, arr->len, arr->cap, arr->layout);
     }
 }

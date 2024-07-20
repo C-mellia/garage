@@ -213,3 +213,20 @@ size_t sa_stack_size(StackAllocator sa) {
 void gracefully_exit(void) {
     raise(SIGUSR1);
 }
+
+int buffered_printf(const char *fmt, ...) {
+    int pfd[2] = {0};
+    va_list args;
+
+    if (pipe(pfd) == -1) return -1;
+
+    int flags = fcntl(pfd[1], F_GETFL, 0);
+    fcntl(pfd[1], F_SETFL, flags | O_NONBLOCK);
+
+    va_start(args, fmt);
+    vdprintf(pfd[1], fmt, args);
+    va_end(args);
+
+    close(pfd[1]);
+    return pfd[0];
+}
