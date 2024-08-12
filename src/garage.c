@@ -10,11 +10,21 @@
 #include <pthread.h>
 
 #include <garage/garage.h>
+#include <garage/log.h>
 
-static int logfd = -1;
-static App app = 0;
+typedef struct Garage {
+    char *logfname;
+    int auto_report;
+    int fallback_to_stderr;
+    void (*exec_startup)(void);
+    void (*exec_cleanup)(void);
+} *Garage;
 
 typedef void (*handle_func)(int);
+
+int logfd = -1;
+
+static Garage garage = 0;
 
 static handle_func handle_abrt = 0, handle_segv = 0, handle_int = 0;
 
@@ -41,12 +51,12 @@ static inline void handle_signal(int sig) {
 
 StackAllocator sa_new(size_t cap) {
     StackAllocator sa = mmap(0, sizeof *sa + cap, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    code_trap(sa, "sa_new: null\n");
+    assert(sa, "sa_new: null\n");
     sa->mem = sa + 1;
     sa->off = sa->offs + MAX_OFFS;
     sa->top = sa->mem + cap;
     sa->cap = cap;
-    code_trap(pthread_mutex_init(&sa->m, 0) == 0, "sa_new: mutex init\n");
+    assert(pthread_mutex_init(&sa->m, 0) == 0, "sa_new: mutex init\n");
     return sa;
 }
 
@@ -54,39 +64,39 @@ void *sa_alloc(StackAllocator sa, size_t bytes) {
     if (sa_stack_empty(sa) && logfd > 0) {
         report("sa_alloc: empty stack warning\n");
     }
-    code_trap(pthread_mutex_lock(&sa->m) == 0, "sa_alloc: mutex lock\n");
+    assert(pthread_mutex_lock(&sa->m) == 0, "sa_alloc: mutex lock\n");
     void *res = sa->top < sa->mem + bytes? 0: (sa->top -= bytes);
-    code_trap(pthread_mutex_unlock(&sa->m) == 0, "sa_alloc: mutex unlock\n");
+    assert(pthread_mutex_unlock(&sa->m) == 0, "sa_alloc: mutex unlock\n");
     return res;
 }
 
 void sa_pop(StackAllocator sa) {
-    code_trap(sa && sa->mem, "sa_pop: null\n");
+    assert(sa && sa->mem, "sa_pop: null\n");
     if (sa && sa->mem) {
-        code_trap(sa->off != sa->offs + MAX_OFFS, "sa_pop: stack underflow\n");
-        code_trap(pthread_mutex_lock(&sa->m) == 0, "sa_pop: mutex lock\n");
+        assert(sa->off != sa->offs + MAX_OFFS, "sa_pop: stack underflow\n");
+        assert(pthread_mutex_lock(&sa->m) == 0, "sa_pop: mutex lock\n");
         sa->top = sa->mem + *sa->off++;
-        code_trap(pthread_mutex_unlock(&sa->m) == 0, "sa_pop: mutex unlock\n");
+        assert(pthread_mutex_unlock(&sa->m) == 0, "sa_pop: mutex unlock\n");
     }
 }
 
 void sa_push(StackAllocator sa) {
     if (sa && sa->mem) {
-        code_trap(sa->off > sa->offs, "sa_push: stack overflow\n");
-        code_trap(pthread_mutex_lock(&sa->m) == 0, "sa_push: mutex lock\n");
+        assert(sa->off > sa->offs, "sa_push: stack overflow\n");
+        assert(pthread_mutex_lock(&sa->m) == 0, "sa_push: mutex lock\n");
         *(--sa->off) = sa->top - sa->mem;
-        code_trap(pthread_mutex_unlock(&sa->m) == 0, "sa_push: mutex unlock\n");
+        assert(pthread_mutex_unlock(&sa->m) == 0, "sa_push: mutex unlock\n");
     }
 }
 
 int sa_stack_empty(StackAllocator sa) {
-    code_trap(sa, "sa_stack_empty: null\n");
+    assert(sa, "sa_stack_empty: null\n");
     return sa->off == sa->offs + MAX_OFFS;
 }
 
 void sa_cleanup(StackAllocator sa) {
     if (sa) {
-        code_trap(pthread_mutex_destroy(&sa->m) == 0, "sa_cleanup: mutex destroy\n");
+        assert(pthread_mutex_destroy(&sa->m) == 0, "sa_cleanup: mutex destroy\n");
         if (!sa_stack_empty(sa) && logfd > 0) {
             report("sa_cleanup: unmaching push and pop\n");
         }
@@ -144,27 +154,27 @@ void setup_env(
     void (*exec_startup)(void),
     void (*exec_cleanup)(void)
 ) {
-    if (app = malloc(sizeof *app), !app) exit(127);
-    app->logfname = logfname;
-    app->auto_report = auto_report;
-    app->fallback_to_stderr = fallback_to_stderr;
-    app->exec_startup = exec_startup;
-    app->exec_cleanup = exec_cleanup;
+    if (garage = malloc(sizeof *garage), !garage) exit(127);
+    garage->logfname = logfname;
+    garage->auto_report = auto_report;
+    garage->fallback_to_stderr = fallback_to_stderr;
+    garage->exec_startup = exec_startup;
+    garage->exec_cleanup = exec_cleanup;
 
     handle_abrt = signal(SIGABRT, handle_signal);
     handle_segv = signal(SIGSEGV, handle_signal);
     handle_int = signal(SIGINT, handle_signal);
     signal(SIGUSR1, handle_signal);
 
-    if (app->logfname) {
-        logfd = open(app->logfname,
+    if (garage->logfname) {
+        logfd = open(garage->logfname,
                 O_WRONLY | O_CREAT | O_TRUNC,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    } else if (app->fallback_to_stderr) {
+    } else if (garage->fallback_to_stderr) {
         logfd = 2;
     }
 
-    if (app->exec_startup) app->exec_startup();
+    if (garage->exec_startup) garage->exec_startup();
 }
 
 static inline size_t file_size(const char *fname) {
@@ -180,18 +190,18 @@ void cleanup(void) {
     signal(SIGABRT, handle_abrt);
     signal(SIGSEGV, handle_segv);
     signal(SIGINT, handle_int);
-    if (!app) return;
-    if (app->exec_cleanup) app->exec_cleanup();
+    if (!garage) return;
+    if (garage->exec_cleanup) garage->exec_cleanup();
 
     if (logfd != -1) {
         close(logfd);
-        if (app->auto_report && file_size(app->logfname)) {
+        if (garage->auto_report && file_size(garage->logfname)) {
             char buf[0x100];
-            sprintf(buf, "less %s", app->logfname);
+            sprintf(buf, "less %s", garage->logfname);
             system(buf);
         }
     }
-    free(app);
+    free(garage);
 }
 
 __attribute__((nonnull(1), format(printf, 1, 2))) void report(const char *msg, ...) {
@@ -206,7 +216,7 @@ void _abort(void) {
 }
 
 size_t sa_stack_size(StackAllocator sa) {
-    code_trap(sa, "sa_stack_size: null\n");
+    assert(sa, "sa_stack_size: null\n");
     return sa->offs + MAX_OFFS -  sa->off;
 }
 
@@ -215,18 +225,34 @@ void gracefully_exit(void) {
 }
 
 int buffered_printf(const char *fmt, ...) {
-    int pfd[2] = {0};
+    int fd;
     va_list args;
+
+    va_start(args, fmt);
+    fd = buffered_vprintf(fmt, args);
+    va_end(args);
+
+    return fd;
+}
+
+int buffered_vprintf(const char *fmt, va_list args) {
+    int pfd[2] = {0};
 
     if (pipe(pfd) == -1) return -1;
 
     int flags = fcntl(pfd[1], F_GETFL, 0);
     fcntl(pfd[1], F_SETFL, flags | O_NONBLOCK);
 
-    va_start(args, fmt);
     vdprintf(pfd[1], fmt, args);
-    va_end(args);
 
+    close(pfd[1]);
+    return pfd[0];
+}
+
+int object_dprint_redirect(void *obj, Dprint dprint) {
+    int pfd[2] = {0};
+    if (pipe(pfd) == -1) return -1;
+    dprint(pfd[1], obj);
     close(pfd[1]);
     return pfd[0];
 }

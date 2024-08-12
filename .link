@@ -1,0 +1,5 @@
+#!/bin/bash
+
+[[ -f libgarage.a ]] && rm libgarage.a
+
+step_exec "ar -rcs libgarage.a `while read -r fname; do echo target/$fname.o; done <<< $srcs` && chmod +x libgarage.a" "Failed to archive static library libgarage.a"

@@ -5,4 +5,4 @@ CC_FLAG='-Wall -Wextra -std=gnu11 -fPIC -Iinclude'
 
 while read -r fname; do
     [[ -f src/$fname.c ]] && step_exec "$CC -o target/$fname.o -c src/$fname.c $CC_FLAG" "Failed to compile $fname.c"
-done <<< $SRC_FILES
+done <<< $srcs

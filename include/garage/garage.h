@@ -7,31 +7,29 @@
 
 // ## macros ##
 
-#define deref(Type, ptr) *(Type *)ptr
-
-#ifndef GARAGE_RELEASE
-#define code_probe() \
-    report("INFO: probing into code at file: %s(%d):%s\n", __FILE__, __LINE__, __FUNCTION__)
-#else // GARAGE_RELEASE
-#define code_probe()
-#endif // GARAGE_RELEASE
-
-#define code_trap(cond, msg, ...) \
-	if (!(cond)) panic(msg, ##__VA_ARGS__)
-
-#define panic(msg, ...) do {\
-	code_probe();\
-	report(msg, ##__VA_ARGS__);\
-    _abort();\
-} while(0)
+#define deref(Type, ptr) *(Type *)(ptr)
+// defines a item in a enum string array to help stringify enums
+// for example:
+/// typedef enum Enum {
+///     FOO,
+///     BAR,
+///     __ENUM_COUNT,
+/// } Enum;
+///
+/// static struct { const char *str, size_t len; } const enum_str[] = {
+///     ENUM_STR_ITEM(FOO),
+///     ENUM_STR_ITEM(BAR),
+/// };
+#define ENUM_STR_ITEM(tag) [tag] = { .str = #tag, .len = sizeof(#tag) - 1 }
 
 #define MAX_OFFS 0x10
 
 
 // ## interface ##
 
-
-typedef struct {
+typedef uint8_t Phantom[0];
+typedef int (*Dprint)(int fd, void *obj);
+typedef struct StackAllocator {
     void *mem, *top;
     size_t cap;
     size_t offs[MAX_OFFS];
@@ -39,20 +37,13 @@ typedef struct {
     pthread_mutex_t m;
 } *StackAllocator;
 
-typedef struct {
-    char *logfname;
-    int auto_report;
-    int fallback_to_stderr;
-    void (*exec_startup)(void);
-    void (*exec_cleanup)(void);
-} *App;
-
 void setup_env(char *logfname, int auto_report, int fallback_to_stderr, void (*exec_startup)(void), void (*exec_cleanup)(void));
 void cleanup(void);
-void report(const char *msg, ...);
 void _abort(void);
 void gracefully_exit(void);
-int buffered_printf(const char *fmt, ...);
+int buffered_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+int buffered_vprintf(const char *fmt, va_list args);
+int object_dprint_redirect(void *obj, Dprint dprint);
 
 StackAllocator sa_new(size_t cap);
 void *sa_alloc(StackAllocator sa, size_t bytes);

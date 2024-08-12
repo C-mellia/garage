@@ -13,6 +13,7 @@
 
 #include <garage/garage.h>
 #include <garage/http.h>
+#include <garage/log.h>
 
 typedef struct {
     const char *method;
@@ -38,7 +39,7 @@ static int server_listen(const char *port);
 // HTTP_VERSION RESPONSE_CODE CODE_NAME
 // HEADER_NAME: VALUE
 // BODY
-static inline int parse_request(char *msg, Request *req) {
+static int parse_request(char *msg, Request *req) {
     char *ws;
     req->method = msg;
     if (ws = strchr(msg, ' '), !ws) return 1;
@@ -95,7 +96,7 @@ void handler_handle_func(Handler h, const char *route, handle_func_t func) {
     char route_buf[strlen(route) + 1];
     HandlePack pack = {0};
 
-    code_trap(h, "handler_handle_func: null\n");
+    assert(h, "handler_handle_func: null\n");
     memcpy(route_buf, route, sizeof route_buf);
     do {
         method = route_buf;
@@ -110,7 +111,7 @@ void handler_handle_func(Handler h, const char *route, handle_func_t func) {
 
 Server server_new(Handler handler, const char *port, size_t worker_threads) {
     Server sv = sa_alloc(sa, sizeof *sv);
-    code_trap(sv && handler, "server_new: null\n");
+    assert(sv && handler, "server_new: null\n");
     memset(sv, 0, sizeof *sv);
     sv->done = 0;
     sv->handler = handler;
@@ -241,19 +242,19 @@ void handler_cleanup(Handler h) {
 }
 
 void handler_default_handle(Handler h, handle_func_t func) {
-    code_trap(h, "handler_default_handle: null\n");
+    assert(h, "handler_default_handle: null\n");
     h->default_handle = func;
 }
 
 void rw_init(ResponseWriter *rw) {
-    code_trap(rw, "rw_init: null\n");
+    assert(rw, "rw_init: null\n");
     memset(rw, 0, sizeof *rw);
     rw->headers = arr_new(sizeof (const char *));
     rw->status = 200;
 }
 
 void rw_status(ResponseWriter *rw, int status) {
-    code_trap(rw, "rw_status: null\n");
+    assert(rw, "rw_status: null\n");
     rw->status = status;
 }
 
@@ -272,7 +273,7 @@ void rw_write_header(ResponseWriter *rw, const char *fmt, ...) {
     size_t len;
     va_list args;
 
-    code_trap(rw, "rw_write_header: null\n");
+    assert(rw, "rw_write_header: null\n");
     va_start(args, fmt);
     len = vsnprintf(buf, sizeof buf, fmt, args);
     va_end(args);
@@ -282,12 +283,12 @@ void rw_write_header(ResponseWriter *rw, const char *fmt, ...) {
 }
 
 void rw_set_body(ResponseWriter *rw, const char *body) {
-    code_trap(rw, "rw_set_body: null\n");
+    assert(rw, "rw_set_body: null\n");
     rw->body = strdup(body);
 }
 
 void rw_write_all(ResponseWriter *rw, int fd) {
-    code_trap(rw, "rw_write_all: null\n");
+    assert(rw, "rw_write_all: null\n");
     dprintf(fd, "HTTP/1.0 %d %s\r\n", rw->status, status_code[rw->status]);
     for (size_t i = 0; i < rw->headers->len; ++i) {
         const char *header = *(const char **)arr_get(rw->headers, i);

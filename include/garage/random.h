@@ -4,10 +4,11 @@
 #include <stdint.h>
 
 typedef struct {
-	int fd;
+    int fd;
 } *RandomEngine;
 
 RandomEngine re_new(void);
+void re_cleanup(RandomEngine re);
 uint8_t re_get_u8(RandomEngine re);
 float re_get_f32(RandomEngine re);
 double re_get_f64(RandomEngine re);
