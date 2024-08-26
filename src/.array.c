@@ -1,3 +1,6 @@
+#ifndef _GARAGE_ARRAY_H
+#define _GARAGE_ARRAY_H 1
+
 static inline size_t cap_inc(size_t cap) {
     return cap? cap * 2: 10;
 }
@@ -15,3 +18,5 @@ static inline int arr_check_cap(Array arr, size_t len) {
     if (cap != arr->cap) return arr_realloc(arr, cap), 0;
     return -1;
 }
+
+#endif // _GARAGE_ARRAY_H

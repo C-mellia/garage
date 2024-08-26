@@ -1,14 +1,15 @@
 #ifndef RANDOM_H
-#define RANDOM_H 1
+#   define RANDOM_H 1
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct RandomEngine {
     int fd;
 } *RandomEngine;
 
 RandomEngine re_new(void);
 void re_cleanup(RandomEngine re);
+void re_drop(RandomEngine *re);
 uint8_t re_get_u8(RandomEngine re);
 float re_get_f32(RandomEngine re);
 double re_get_f64(RandomEngine re);

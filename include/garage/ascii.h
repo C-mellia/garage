@@ -1,5 +1,5 @@
-#ifndef GARAGE_STRING_H
-#define GARAGE_STRING_H 1
+#ifndef GARAGE_ASCII_H
+#   define GARAGE_ASCII_H 1
 
 int ch_ws(char ch);
 int ch_open_paren(char ch);
@@ -16,4 +16,4 @@ int ch_pun(char ch);
 
 char ch_toctl(char ch);
 
-#endif // GARAGE_STRING_H
+#endif // GARAGE_ASCII_H

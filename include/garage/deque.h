@@ -1,12 +1,10 @@
 #ifndef GARAGE_QUEUE_H
-#define GARAGE_QUEUE_H 1
+#   define GARAGE_QUEUE_H 1
 
 #include <garage/array.h>
 
-typedef struct Stack {
-    void *mem, *top;
-    size_t len, cap, align;
-} *Stack;
+struct StatArr;
+struct Array;
 
 typedef struct Deque {
     void *mem, *begin;
@@ -28,14 +26,10 @@ void *deque_back(Deque dq);
 
 void deque_deb_print(Deque dq);
 
-Stack stack_new(size_t align);
-void stack_cleanup(Stack st);
-void *stack_push(Stack st, void *data);
-void *stack_pop(Stack st);
-void *stack_get(Stack st, size_t idx);
-void *stack_insert(Stack st, size_t idx, void *data);
+void *deque_search_item(Deque dq, const void *data);
+void *deque_search_mem(Deque dq, const void *data, size_t len);
 
-void *stack_top(Stack st);
-void *stack_bottom(Stack st);
+Deque deque_from_arr(struct Array *arr);
+Deque deque_from_star(struct StatArr *star);
 
 #endif // GARAGE_QUEUE_H

@@ -1,34 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
+#include <regex.h>
 
 #include <garage/log.h>
 #include <garage/container.h>
 
 #include "./.array.c"
 #include "./.deque.c"
-
-static void *mem_search_item(void *begin, void *end, const void *data, size_t step) {
-    while (begin < end) {
-        if (!memcmp(begin, data, step)) return begin;
-        begin += step;
-    }
-    return 0;
-}
-
-static void *mem_search_mem(void *begin, void *end, const void *data, size_t len, size_t step) {
-    size_t range_len;
-    void *range_end = begin;
-    while (range_len = range_end - begin, begin < end) {
-        if (begin < range_end && memcmp(begin, data, range_len)) {
-            begin = range_end;
-        } else if ((size_t) range_len == len * step) {
-            return begin;
-        } else {
-            range_end += step;
-        }
-    }
-    return 0;
-}
+#include "./.search.c"
 
 Array arr_from_star(StatArr star) {
     if (!star) return 0;
@@ -85,4 +64,9 @@ Deque deque_from_star(StatArr star) {
         dq->len = star->len;
     }
     return dq;
+}
+
+void *arr_search_item_func(Array arr, Cmp cmp) {
+    assert(arr, "Array is not initialized\n");
+    return cmp? mem_search_item_func(arr->mem, arr->mem + arr->len * arr->align, cmp, arr->align): 0;
 }

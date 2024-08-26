@@ -1,5 +1,7 @@
 #ifndef GARAGE_LOG_H
-#define GARAGE_LOG_H 1
+#   define GARAGE_LOG_H 1
+
+#include <garage/garage.h>
 
 #ifndef GARAGE_RELEASE
 #define probe() \

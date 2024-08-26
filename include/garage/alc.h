@@ -1,5 +1,5 @@
 #ifndef GARAGE_ALC_H
-#define GARAGE_ALC_H 1
+#   define GARAGE_ALC_H 1
 
 typedef struct AlcNode {
     struct AlcNode *next, *prev;

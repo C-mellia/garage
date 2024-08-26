@@ -1,3 +1,6 @@
+#ifndef _GARAGE_DEQUE_H
+#define _GARAGE_DEQUE_H 1
+
 static inline void *top_clamp(void *end, void *ptr, size_t len) {
     while (ptr >= end) ptr -= len;
     return ptr;
@@ -48,3 +51,5 @@ static int deque_check_cap(Deque dq, size_t len) {
     if (cap != dq->cap) return deque_realloc(dq, cap), 0;
     return -1;
 }
+
+#endif // _GARAGE_DEQUE_H

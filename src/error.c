@@ -8,6 +8,8 @@
 #include <garage/error.h>
 #include <garage/log.h>
 
+extern int logfd;
+
 Result ok_new(void *src, size_t len) {
     Result res = malloc(sizeof *res + len);
     assert(res, "ok_new: malloc failed\n");
@@ -32,10 +34,10 @@ void res_cleanup(Result res) {
     if (res) free(res);
 }
 
-void *res_consume(Result res, int fd) {
+void *res_consume(Result res) {
     if (!res) return res_cleanup(res), NULL;
     if (res->code == -1) {
-        dprintf(fd, "%.*s\n", (int)res->len, res->data);
+        dprintf(logfd, "%.*s\n", (int)res->len, res->data);
         res_cleanup(res);
         panic("attempting to consume an error result\n");
         __builtin_unreachable();

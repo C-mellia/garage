@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <regex.h>
 #include <stdarg.h>
 
 #include <sys/socket.h>
@@ -15,55 +14,43 @@
 #include <garage/http.h>
 #include <garage/log.h>
 
-typedef struct {
-    const char *method;
-    regex_t url_reg;
-    handle_func_t func;
-} HandlePack;
-
-extern StackAllocator sa;
-
-static const char *status_code[] = {
-    [200] = "OK",
-    [404] = "NOT FOUND",
-};
+#include "./.http.c"
 
 static void *worker(void *args);
 static int server_listen(const char *port);
 
-// HTTP Request:
-// METHOD URL HTTP_VERSION
-// HEADER_NAME: VALUE
-// BODY
-// HTTP Response:
-// HTTP_VERSION RESPONSE_CODE CODE_NAME
-// HEADER_NAME: VALUE
-// BODY
-static int parse_request(char *msg, Request *req) {
-    char *ws;
-    req->method = msg;
-    if (ws = strchr(msg, ' '), !ws) return 1;
-    *ws++ = 0;
-    req->url = ws;
-    if (ws = strchr(ws, ' '), !ws) return 1;
-    *ws++ = 0;
-    return 0;
+Handler handler_new() {
+    Handler h = malloc(sizeof *h);
+    memset(h, 0, sizeof *h);
+    h->handle_funcs = arr_new(sizeof (HandlePack));
+    return h;
 }
 
-static inline int read_request(int client_s, Request *req) {
-    char buf[0x1000] = {0};
-    size_t msg_len;
-    msg_len = read(client_s, buf, sizeof buf), buf[msg_len] = 0;
-    return parse_request(buf, req);
+void handler_handle_func(Handler h, const char *route, handle_func_t func) {
+    assert(h, "Handler is not initailized at this point\n");
+    Slice Cleanup(slice_drop) route_slice = slice_new((void *)route, strlen(route), 1);
+
+    Slice method = slice_split_at(route_slice, slice_search_item(route_slice, "/"));
+    if (method) slice_trim(method, " \t\n", 3);
+    slice_trim(route_slice, " \t\n", 3);
+    Slice Cleanup(slice_drop) url = slice_split_once(route_slice, " ");
+    HandlePack pack = handle_pack_new(method, url, func);
+    arr_push_back(h->handle_funcs, &pack);
 }
 
-// route_pattern: GET /; GET /home; POST /api/*; GET /api/*
-// req_route: GET /; GET /home; POST /api/login; GET /api/token
-static int match_url(regex_t *url_pattern, const char *req_url) {
-    regmatch_t pmatch[1];
-
-    if (regexec(url_pattern, req_url, sizeof pmatch / sizeof pmatch[0], pmatch, 0)) return 0;
-    return (size_t) (pmatch[0].rm_eo - pmatch[0].rm_so) == strlen(req_url);
+Server server_new(Handler handler, const char *port, size_t worker_threads) {
+    if (!handler) return 0;
+    Server sv = malloc(sizeof *sv);
+    assert(sv, "Failed to allocate memory of size: %zu\n", sizeof *sv);
+    memset(sv, 0, sizeof *sv);
+    sv->done = 0;
+    sv->handler = handler;
+    sv->incoming = arr_new(sizeof (int));
+    sv->listen_s = -1;
+    sv->config.port = port, sv->config.worker_threads = worker_threads;
+    pthread_mutex_init(&sv->mutex, 0);
+    pthread_cond_init(&sv->cond, 0);
+    return sv;
 }
 
 static int server_listen(const char *port) {
@@ -84,61 +71,29 @@ static int server_listen(const char *port) {
     return res = listen(s, 0x100), res == 0? s: (close(s), -1);
 }
 
-Handler handler_new() {
-    Handler h = malloc(sizeof *h);
-    memset(h, 0, sizeof *h);
-    h->handle_funcs = arr_new(sizeof (HandlePack));
-    return h;
-}
-
-void handler_handle_func(Handler h, const char *route, handle_func_t func) {
-    char *method = 0, *url = 0;
-    char route_buf[strlen(route) + 1];
-    HandlePack pack = {0};
-
-    assert(h, "handler_handle_func: null\n");
-    memcpy(route_buf, route, sizeof route_buf);
-    do {
-        method = route_buf;
-        if (url = strchr(method, ' '), !url) break;
-        *url++ = 0;
-    } while(0);
-    if (!url) url = method, method = 0;
-    pack.method = strdup(method), pack.func = func;
-    if (regcomp(&pack.url_reg, url, 0)) return;
-    arr_push_back(h->handle_funcs, &pack);
-}
-
-Server server_new(Handler handler, const char *port, size_t worker_threads) {
-    Server sv = sa_alloc(sa, sizeof *sv);
-    assert(sv && handler, "server_new: null\n");
-    memset(sv, 0, sizeof *sv);
-    sv->done = 0;
-    sv->handler = handler;
-    sv->incoming = arr_new(sizeof (int));
-    sv->listen_s = -1;
-    sv->config.port = port, sv->config.worker_threads = worker_threads;
-    pthread_mutex_init(&sv->mutex, 0);
-    pthread_cond_init(&sv->cond, 0);
-    return sv;
-}
-
+// Note: This function has a huge problem, that any interuption happens during
+// the loop, will results in a deadlock, due to a design how server cleans up,
+// that by decreasing the `done` integer field of the server struct, thereby
+// make sure all the thread exits, however one of the exits will be ommited
+// when an interuption happens, and the server will be stuck forever.
+//
+// But, more strangely, not knowing how, interupting the process with C-c still
+// kills the server and cleanup all the threads as expected.
+//
+// So currently, the function still works just to make sure that no
+// interuption occurs during the loop, for example null pointer dereference or
+// floating point exceptions, and still kind of prune to errors, so this is
+// just sort of a Todo list for me to fix this issue maybe in the future.
 static void *worker(void *args) {
-    Server sv;
+    Server sv = args;
     Array incoming, handle_funcs;
     pthread_mutex_t *mutex;
     pthread_cond_t *cond;
-    pthread_t id;
+    pthread_t id = pthread_self();
     int client_s, *p;
-    const char *method;
     regex_t *regex;
     handle_func_t handle_func, default_handle;
-    HandlePack *pack;
-    Request req;
-    ResponseWriter rw = {0};
 
-    sv = args;
-    id = pthread_self();
     incoming = sv->incoming;
     handle_funcs = sv->handler->handle_funcs;
     default_handle = sv->handler->default_handle;
@@ -150,28 +105,30 @@ static void *worker(void *args) {
         pthread_cond_wait(cond, mutex);
         if (p = arr_pop_front(incoming), p) client_s = *p;
         pthread_mutex_unlock(mutex);
-        if (!p) continue; // no client socket, though normally not possible at this point
-        if (read_request(client_s, &req)) goto close_connection;
-        // printf("%s, %s\n", req.method, req.url);
+        if (__builtin_expect(!p, 0)) continue; // no client socket available, normally not common at this point though
+        Request Cleanup(req_drop) req = req_from_client(client_s);
+        if (!req) goto close_connection;
 
-        rw_init(&rw);
+        ResponseWriter Cleanup(rw_drop) rw = rw_new(RESPONSE_OK);
+        printf("\n");
         for (size_t i = 0; i < handle_funcs->len; ++i) {
-            if (pack = arr_get(handle_funcs, i), !pack) continue;
-            method = pack->method;
+            HandlePack pack = deref(HandlePack, arr_get(handle_funcs, i));
+            RequestMethod method = pack->method;
             regex = &pack->url_reg;
             handle_func = pack->func;
-            if (match_url(regex, req.url) && (!method || strcmp(method, req.method) == 0)) {
-                handle_func(&rw, &req);
+            if (!handle_func) goto close_connection;
+            char *url = alloca(req->url->len + 1);
+            memcpy(url, req->url->mem, req->url->len), url[req->url->len] = 0;
+            if (match_url(regex, url) && (method == REQUEST_INVAL || req->method == method)) {
+                handle_func(rw, req);
                 goto write_all;
             }
         }
 
-        // Unreachable if handled correctly
-        default_handle(&rw, &req);
+        if (default_handle) default_handle(rw, req);
 
     write_all:
-        rw_write_all(&rw, client_s);
-        rw_cleanup(&rw);
+        rw_write_all(rw, client_s);
     close_connection:
         close(client_s), client_s = -1;
     }
@@ -183,6 +140,14 @@ static void *worker(void *args) {
     return 0;
 }
 
+// Note: I kind of have an idea, that by creating yet another thread for the
+// loop, that constantly accepting incomings and queuing up all the
+// connections, so that this function is non block at all, and by creating a
+// single way pipe, then return the readable side of the pipe, so all the logs
+// generated while server is running can be redirected to the main function,
+// and the logs can be handled in a more flexible way.
+//
+// Some technologies, like redirecting between threads with pipes, I've never tested
 int server_listen_and_serve(Server sv) {
     pthread_t thread;
     int client_s;
@@ -218,27 +183,30 @@ void server_cleanup(Server sv) {
     if (!sv) return;
     mutex = &sv->mutex;
     cond = &sv->cond;
+    pthread_mutex_unlock(mutex);
     pthread_mutex_lock(mutex);
+    close(sv->listen_s), sv->listen_s = -1;
     sv->exit_sig = 1;
     pthread_cond_broadcast(cond);
     printf("waiting for worker threads to exit\n");
     pthread_mutex_unlock(mutex);
     while(sv->done) usleep(1000);
-    close(sv->listen_s), sv->listen_s = -1;
     arr_cleanup(sv->incoming);
-    handler_cleanup(sv->handler);
-    printf("Server cleanup\n");
+    printf("Server cleaned up\n");
 }
 
 void handler_cleanup(Handler h) {
     if (!h) return;
     for (size_t i = 0; i < h->handle_funcs->len; ++i) {
         HandlePack *pack = arr_get(h->handle_funcs, i);
-        free((void *)pack->method);
-        regfree(&pack->url_reg);
+        handle_pack_cleanup(*pack);
     }
     arr_cleanup(h->handle_funcs);
     free(h);
+}
+
+void handler_drop(Handler *h) {
+    if (h && *h) handler_cleanup(*h), *h = 0;
 }
 
 void handler_default_handle(Handler h, handle_func_t func) {
@@ -246,57 +214,99 @@ void handler_default_handle(Handler h, handle_func_t func) {
     h->default_handle = func;
 }
 
-void rw_init(ResponseWriter *rw) {
-    assert(rw, "rw_init: null\n");
+ResponseWriter rw_new(ResponseStatus status) {
+    ResponseWriter rw = malloc(sizeof *rw);
+    assert(rw, "Failed to allocate memory of size: %zu\n", sizeof *rw);
     memset(rw, 0, sizeof *rw);
-    rw->headers = arr_new(sizeof (const char *));
-    rw->status = 200;
+    rw->headers = arr_new(sizeof (String)), rw->status = status;
+    rw->body = string_new();
+    return rw;
 }
 
-void rw_status(ResponseWriter *rw, int status) {
-    assert(rw, "rw_status: null\n");
-    rw->status = status;
-}
-
-void rw_cleanup(ResponseWriter *rw) {
+void rw_cleanup(ResponseWriter rw) {
     if (!rw) return;
     for (size_t i = 0; i < rw->headers->len; ++i) {
-        free((void *) *(const char **)arr_get(rw->headers, i));
+        String header = deref(String, arr_get(rw->headers, i));
+        string_cleanup(header);
     }
     arr_cleanup(rw->headers);
-    if (rw->body) free((void *)rw->body);
+    if (rw->body) free(rw->body);
+    free(rw);
 }
 
-void rw_write_header(ResponseWriter *rw, const char *fmt, ...) {
-    char buf[0x1000];
-    char *header;
-    size_t len;
+void rw_drop(ResponseWriter *rw) {
+    if (rw && *rw) rw_cleanup(*rw), *rw = 0;
+}
+
+void rw_write_header(ResponseWriter rw, const char *fmt, ...) {
     va_list args;
 
-    assert(rw, "rw_write_header: null\n");
+    assert(rw, "Response Writer is not initialized at this point\n");
     va_start(args, fmt);
-    len = vsnprintf(buf, sizeof buf, fmt, args);
+    String header = string_new();
+    string_vfmt(header, fmt, args);
     va_end(args);
-    header = malloc(len + 1);
-    memcpy(header, buf, len + 1);
     arr_push_back(rw->headers, &header);
 }
 
-void rw_set_body(ResponseWriter *rw, const char *body) {
-    assert(rw, "rw_set_body: null\n");
-    rw->body = strdup(body);
+void rw_set_body(ResponseWriter rw, const char *body) {
+    assert(rw, "Response Writer is not initialized at this point\n");
+    string_fmt(rw->body, "%s", body);
 }
 
-void rw_write_all(ResponseWriter *rw, int fd) {
-    assert(rw, "rw_write_all: null\n");
-    dprintf(fd, "HTTP/1.0 %d %s\r\n", rw->status, status_code[rw->status]);
+void rw_write_all(ResponseWriter rw, int fd) {
+    assert(rw, "Response Writer is not initialized at this point\n");
+    dprintf(fd, "HTTP/1.0 %d %.*s\r\n",
+            rw->status, (int)res_str[rw->status].len, (char *)res_str[rw->status].mem);
     for (size_t i = 0; i < rw->headers->len; ++i) {
-        const char *header = *(const char **)arr_get(rw->headers, i);
-        if (i + 1 == rw->headers->len) {
-            dprintf(fd, "%s\r\n\r\n", header);
-        } else {
-            dprintf(fd, "%s\r\n", header);
-        }
+        String header = deref(String, arr_get(rw->headers, i));
+        string_dprint(fd, header);
+        dprintf(fd, "\r\n");
     }
-    if (rw->body) dprintf(fd, "%s\n", rw->body);
+    dprintf(fd, "\r\n");
+    if (string_dprint(fd, rw->body)) dprintf(fd, "\r\n");
+}
+
+Request req_new(RequestMethod method, Slice url) {
+    Request req = malloc(sizeof *req);
+    assert(req, "req_new: Failed to allocate memory of size: %zu\n", sizeof *req);
+    req->method = method, req->url = url;
+    return req;
+}
+
+HandlePack handle_pack_new(Slice method, Slice url, handle_func_t func) {
+    if (!url || !func) return 0;
+    HandlePack pack = malloc(sizeof *pack);
+    assert(pack, "Failed to allocate memory of size: %zu\n", sizeof *pack);
+    char *url_str = alloca(url->len + 1);
+    memcpy(url_str, url->mem, url->len), url_str[url->len] = 0;
+    if (regcomp(&pack->url_reg, url_str, REG_EXTENDED | REG_NOSUB)) {
+        free(pack);
+        return 0;
+    }
+    RequestMethod req_method = method? req_method_from_slice(method): REQUEST_INVAL;
+    pack->method = req_method, pack->func = func;
+    return pack;
+}
+
+void handle_pack_cleanup(HandlePack pack) {
+    if (!pack) return;
+    regfree(&pack->url_reg);
+    free(pack);
+}
+
+void req_cleanup(Request req) {
+    if (!req) return;
+    slice_cleanup(req->url);
+    free(req);
+}
+
+Request req_from_client(int client_s) {
+    String Cleanup(string_drop) req_str = string_new();
+    string_from_file(client_s, req_str);
+    return parse_request(req_str);
+}
+
+void req_drop(Request *req) {
+    if (req && *req) req_cleanup(*req), *req = 0;
 }

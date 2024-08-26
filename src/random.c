@@ -48,3 +48,7 @@ void re_cleanup(RandomEngine re) {
         free(re);
     }
 }
+
+void re_drop(RandomEngine *re) {
+    if (re && *re) re_cleanup(*re), *re = 0;
+}
