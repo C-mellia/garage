@@ -1,22 +1,45 @@
 #ifndef _GARAGE_ARRAY_H
 #define _GARAGE_ARRAY_H 1
 
-static inline size_t cap_inc(size_t cap) {
+static inline __attribute__((unused))
+size_t cap_inc(size_t cap);
+static inline __attribute__((unused))
+void arr_realloc(Array arr, size_t cap);
+static inline __attribute__((unused))
+int arr_check_cap(Array arr, size_t len);
+static inline __attribute__((unused))
+void *mem_dup(const void *mem, size_t align, size_t len);
+static inline __attribute__((unused))
+void *mem_dup_zero_end(const void *mem, size_t align, size_t len);
+
+static size_t cap_inc(size_t cap) {
     return cap? cap * 2: 10;
 }
 
-static inline void arr_realloc(Array arr, size_t cap) {
+static void arr_realloc(Array arr, size_t cap) {
     void *new_mem = malloc(cap * arr->align);
-    assert(new_mem, "malloc failed for size of 0x%lx\n", cap * arr->align);
-    memcpy(new_mem, arr->mem, arr->len * arr->align);
-    free(arr->mem), arr->mem = new_mem, arr->cap = cap;
+    alloc_check(malloc, new_mem, cap * arr->align);
+    if (arr->mem) memcpy(new_mem, arr->mem, arr->len * arr->align), free(arr->mem);
+    arr->mem = new_mem, arr->cap = cap;
 }
 
-static inline int arr_check_cap(Array arr, size_t len) {
+static int arr_check_cap(Array arr, size_t len) {
     size_t cap = arr->cap;
     while(cap < len) cap = cap_inc(cap);
     if (cap != arr->cap) return arr_realloc(arr, cap), 0;
     return -1;
+}
+
+static void *mem_dup(const void *mem, size_t align, size_t len) {
+    void *new_mem = malloc(len * align);
+    alloc_check(malloc, new_mem, len * align);
+    return memcpy(new_mem, mem, len * align);
+}
+
+static void *mem_dup_zero_end(const void *mem, size_t align, size_t len) {
+    void *new_mem = malloc((len + 1) * align);
+    alloc_check(malloc, new_mem, (len + 1) * align);
+    return memset(new_mem + len * align, 0, align), memcpy(new_mem, mem, len * align);
 }
 
 #endif // _GARAGE_ARRAY_H

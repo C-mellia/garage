@@ -2,104 +2,79 @@
 #include <string.h>
 #include <regex.h>
 
+#include <garage/garage.h>
 #include <garage/slice.h>
 #include <garage/log.h>
-#include <garage/container.h>
 #include <garage/string.h>
 #include <garage/array.h>
 
+#include "./.array.c"
+#include "./.slice.c"
 #include "./.search.c"
 
-static void __unused_symbols(void) __attribute__((unused));
-
-static inline void *__slice_get(Slice slice, size_t idx) __attribute__((always_inline, pure));
-static inline void *__slice_begin(Slice slice) __attribute__((always_inline, pure));
-static inline void *__slice_end(Slice slice) __attribute__((always_inline, pure));
-static inline void *__slice_front(Slice slice) __attribute__((always_inline, pure));
-static inline void *__slice_back(Slice slice) __attribute__((always_inline, pure));
-static inline void *max_clamp(void *val, void *max) __attribute__((always_inline, pure));
-
-static void __unused_symbols(void) {
-    (void) mem_search_item_func;
-}
-
-static inline void *__slice_get(Slice slice, size_t idx) {
-    return slice->mem + idx * slice->align;
-}
-
-static inline void *__slice_begin(Slice slice) {
-    return slice->mem;
-}
-
-static inline void *__slice_end(Slice slice) {
-    return slice->mem + slice->len * slice->align;
-}
-
-static inline void *__slice_front(Slice slice) {
-    return slice->mem;
-}
-
-static inline void *__slice_back(Slice slice) {
-    return slice->mem + (slice->len - 1) * slice->align;
-}
-
-static inline Slice __slice_split_at(Slice slice, void *pos) {
-    Slice left = slice_new(__slice_begin(slice), slice->align, (pos - slice->mem) / slice->align);
-    slice->mem = max_clamp(pos, __slice_end(slice));
-    return left;
-}
-
-static inline void *max_clamp(void *val, void *max) {
-    return val > max? max: val;
+void slice_init(Slice slice, void *mem, size_t align, size_t len) {
+    if (!slice) return;
+    __slice_init(slice, mem, align, len);
 }
 
 Slice slice_new(void *mem, size_t align, size_t len) {
     Slice slice = malloc(sizeof *slice);
-    assert(slice, "Failed to allocate memory of size: %zu\n", sizeof *slice);
-    slice->mem = mem, slice->len = len, slice->align = align;
-    return slice;
+    alloc_check(malloc, slice, sizeof *slice);
+    return __slice_init(slice, mem, align, len), slice;
 }
 
 Slice slice_from_arr(Array arr) {
-    assert(arr, "Array is not initialized at this point\n");
+    if (!arr) return 0;
     return slice_new(arr->mem, arr->align, arr->len);
 }
 
 void slice_cleanup(Slice slice) {
-    if (slice) free(slice);
+    (void) slice;
+    // if (!slice) return;
+    // slice->mem = 0, slice->len = 0;
 }
 
 void slice_drop(Slice *slice) {
-    if (slice && *slice) slice_cleanup(*slice), *slice = 0;
+    if (slice && *slice) slice_cleanup(*slice), free(*slice), *slice = 0;
 }
 
 void *slice_get(Slice slice, size_t idx) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return idx < slice->len? slice->mem + idx * slice->align: 0;
 }
 
+void *slice_dup_mem(Slice slice) {
+    nul_check(Slice, slice);
+    return mem_dup(slice->mem, slice->align, slice->len);
+}
+
+void *slice_dup_mem_zero_end(Slice slice) {
+    nul_check(Slice, slice);
+    return mem_dup_zero_end(slice->mem, slice->align, slice->len);
+}
+
 void *slice_front(Slice slice) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return slice_get(slice, 0);
 }
 
 void *slice_back(Slice slice) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return slice_get(slice, slice->len - 1);
 }
 
 void *slice_begin(Slice slice) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return __slice_begin(slice);
 }
 
 void *slice_end(Slice slice) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return __slice_end(slice);
 }
 
 void slice_trim(Slice slice, void *mem, size_t len) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     slice_trim_left(slice, mem, len), slice_trim_right(slice, mem, len);
 }
 
@@ -108,29 +83,42 @@ void slice_trim(Slice slice, void *mem, size_t len) {
 // const int data[] = { 1, 2, 3 };
 // slice_trim_left(slice/* align=4 */, data, sizeof data / sizeof *data);
 void slice_trim_left(Slice slice, void *mem, size_t len) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     if (!mem || !len) return;
     while (slice->len && mem_search_item(mem, mem + slice->align * len, __slice_front(slice), slice->align)) slice->mem += slice->align, --slice->len;
 }
 
 void slice_trim_right(Slice slice, void *mem, size_t len) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     if (!mem || !len) return;
     while (slice->len && mem_search_item(mem, mem + slice->align * len, __slice_back(slice), slice->align)) --slice->len;
 }
 
-Slice slice_split_once(Slice slice, void *item) {
-    assert(slice, "Slice is not initialized at this point\n");
+void slice_split(Array/* Slice */ arr, Slice slice, void *mem, size_t len) {
+    nul_check(Slice, slice), nul_check(Array, arr);
+    if (!mem) return;
+    while (slice->len) {
+        void *res = mem_search_mem(__slice_begin(slice), __slice_end(slice), mem, len, slice->align);
+        size_t left_len = res? (res - __slice_begin(slice) + slice->align - 1) / slice->align: slice->len;
+        Slice left = slice_new(__slice_begin(slice), slice->align, left_len);
+        slice->mem = max_clamp(res + left->align * len, __slice_end(slice));
+        slice->len = left->len + len < slice->len? slice->len - left->len - len: 0;
+        arr_push_back(arr, &left);
+    }
+}
+
+Slice slice_split_once(Slice slice, void *item, size_t len) {
+    nul_check(Slice, slice);
     if (!item) return 0;
-    void *item_pos = mem_search_item(__slice_begin(slice), __slice_end(slice), item, slice->align)? : __slice_end(slice);
-    Slice left = slice_new(__slice_begin(slice), slice->align, (item_pos - __slice_begin(slice)) / slice->align);
-    slice->mem = max_clamp(item_pos + slice->align, __slice_end(slice));
+    void *mem_pos = mem_search_mem(__slice_begin(slice), __slice_end(slice), item, len, slice->align)? : __slice_end(slice);
+    Slice left = slice_new(__slice_begin(slice), slice->align, (mem_pos - __slice_begin(slice)) / slice->align);
+    slice->mem = max_clamp(mem_pos + slice->align, __slice_end(slice));
     slice->len = slice->len > left->len + 1? slice->len - left->len - 1: 0;
     return left;
 }
 
 Slice slice_split_once_mem(Slice slice, void *mem, size_t len) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     if (!mem || !len) return 0;
     void *mem_pos = mem_search_mem(__slice_begin(slice), __slice_end(slice), mem, len, slice->align)? : __slice_end(slice);
     Slice left = slice_new(__slice_begin(slice), slice->align, (mem_pos - slice->mem) / slice->align);
@@ -140,12 +128,9 @@ Slice slice_split_once_mem(Slice slice, void *mem, size_t len) {
 }
 
 int slice_deb_dprint(int fd, Slice slice) {
-    if (!slice) {
-        return dprintf(fd, "(nil)");
-    } else {
-        return dprintf(fd, "{mem: %p, align: %zu, len: %zu}",
-                       slice->mem, slice->align, slice->len);
-    }
+    if (!slice) return dprintf(fd, "(nil)");
+    return dprintf(fd, "{mem: %p, align: %zu, len: %zu}",
+                   slice->mem, slice->align, slice->len);
 }
 
 int slice_deb_print(Slice slice) {
@@ -153,39 +138,36 @@ int slice_deb_print(Slice slice) {
 }
 
 void *slice_search_item(Slice slice, const void *data) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return mem_search_item(__slice_begin(slice), __slice_end(slice), data, slice->align);
 }
 
 void *slice_search_mem(Slice slice, const void *data, size_t len) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     return mem_search_mem(__slice_begin(slice), __slice_end(slice), data, len, slice->align);
 }
 
 void *slice_search_regex(Slice slice, regex_t *regex) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     assert(slice->align == 1, "Expected an alignment of 1, got %zu\n", slice->align);
     return mem_search_regex(__slice_begin(slice), __slice_end(slice), regex, slice->align);
 }
 
 Slice slice_split_at(Slice slice, void *pos) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     if (pos < __slice_begin(slice) || pos > __slice_end(slice)) return 0;
     return __slice_split_at(slice, pos);
 }
 
 Slice slice_split_at_idx(Slice slice, size_t idx) {
-    assert(slice, "Slice is not initialized at this point\n");
+    nul_check(Slice, slice);
     if (idx >= slice->len) return 0;
     return __slice_split_at(slice, __slice_get(slice, idx));
 }
 
 int slice_dprint(int fd, Slice slice) {
-    if (!slice || !slice->mem) {
-        return dprintf(fd, "(nil)");
-    } else {
-        return dprintf(fd, "%.*s", (int) slice->len, (char *)slice->mem);
-    }
+    if (!slice) return dprintf(fd, "(nil)");
+    return dprintf(fd, "%.*s", (int) slice->len, (char *)slice->mem);
 }
 
 int slice_print(Slice slice) {
@@ -193,19 +175,16 @@ int slice_print(Slice slice) {
 }
 
 int slice_hex_dprint(int fd, Slice slice) {
-    if (!slice) {
-        return dprintf(fd, "(nil)");
-    } else {
-        String string = string_new();
-        string_fmt(string, "[");
-        for (size_t i = 0; i < slice->len; ++i) {
-            string_fmt(string, "0x");
-            string_from_anyint_hex(string, __slice_get(slice, i), slice->align);
-            if (i + 1 < slice->len) string_fmt(string, ", ");
-        }
-        string_fmt(string, "]");
-        return ({ int len = string_dprint(fd, string); string_cleanup(string), len; });
+    if (!slice) return dprintf(fd, "(nil)");
+    String string = string_new();
+    string_fmt(string, "[");
+    for (size_t i = 0; i < slice->len; ++i) {
+        string_fmt(string, "0x");
+        string_from_anyint_hex(string, __slice_get(slice, i), slice->align);
+        if (i + 1 < slice->len) string_fmt(string, ", ");
     }
+    string_fmt(string, "]");
+    return ({ int len = string_dprint(fd, string); string_cleanup(string), len; });
 }
 
 int slice_hex_print(Slice slice) {

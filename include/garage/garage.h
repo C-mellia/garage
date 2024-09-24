@@ -1,6 +1,7 @@
 #ifndef GARAGE_H
 #   define GARAGE_H 1
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
@@ -29,6 +30,11 @@
 /// void *ptr Cleanup(cleanup) = malloc(10);
 #define Cleanup(func) __attribute__((cleanup(func)))
 
+// .e.g:
+// if (likely(x > 0)) { ... }
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+
 // ## interface ##
 
 typedef uint8_t Phantom[0];
@@ -38,11 +44,14 @@ __attribute__((nonnull(1, 2)))
 void memswap(void *lhs, void *rhs, size_t align);
 void setup_env(char *logfname, int auto_report, int fallback_to_stderr, void (*exec_startup)(void), void (*exec_cleanup)(void));
 void cleanup(void);
-void _abort(void);
-void gracefully_exit(void);
+void __attribute__((noreturn))
+_abort(void);
+void __attribute__((noreturn))
+gracefully_exit(void);
 int buffered_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 int buffered_vprintf(const char *fmt, va_list args);
 int object_dprint_redirect(void *obj, Dprint dprint);
 void fd_drop(int *fd);
+void ptr_drop(void *ptr);
 
 #endif // GARAGE_H

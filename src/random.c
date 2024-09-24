@@ -10,11 +10,22 @@
 
 static const char *const random_device = "/dev/random";
 
+static void __re_init(RandomEngine re);
+
+void re_init(RandomEngine re) {
+    if (!re) return;
+    __re_init(re);
+}
+
 RandomEngine re_new(void) {
     RandomEngine re = malloc(sizeof *re);
-    re->fd = open(random_device, O_RDONLY);
-    assert(re->fd > -1, "re_new: failed to open file '%s'\n", random_device);
-    return re;
+    alloc_check(malloc, re, sizeof *re);
+    return __re_init(re), re;
+}
+
+void re_cleanup(RandomEngine re) {
+    if (!re) return;
+    close(re->fd), re->fd = -1;
 }
 
 uint8_t re_get_u8(RandomEngine re) {
@@ -42,13 +53,11 @@ uint64_t re_get_u64(RandomEngine re) {
     return read(re->fd, buf, 4) < 4? 0: *(uint64_t *) buf;
 }
 
-void re_cleanup(RandomEngine re) {
-    if (re) {
-        close(re->fd);
-        free(re);
-    }
-}
-
 void re_drop(RandomEngine *re) {
     if (re && *re) re_cleanup(*re), *re = 0;
+}
+
+static void __re_init(RandomEngine re) {
+    re->fd = open(random_device, O_RDONLY);
+    assert(re->fd != -1, "re_init: failed to open file '%s'\n", random_device);
 }

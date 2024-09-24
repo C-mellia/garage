@@ -7,6 +7,7 @@ typedef struct RandomEngine {
     int fd;
 } *RandomEngine;
 
+void re_init(RandomEngine re);
 RandomEngine re_new(void);
 void re_cleanup(RandomEngine re);
 void re_drop(RandomEngine *re);

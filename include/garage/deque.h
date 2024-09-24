@@ -3,7 +3,7 @@
 
 #include <garage/array.h>
 
-struct StatArr;
+struct Vec;
 struct Array;
 
 typedef struct Deque {
@@ -11,25 +11,27 @@ typedef struct Deque {
     size_t len, cap, align;
 } *Deque;
 
-Deque deque_new(size_t align);
-void deque_cleanup(Deque dq);
-void *deque_push_back(Deque dq, void *data);
-void *deque_push_front(Deque dq, void *data);
-void *deque_pop_back(Deque dq);
-void *deque_pop_front(Deque dq);
-size_t deque_len(Deque dq);
-void *deque_get(Deque dq, size_t idx);
-void *deque_insert(Deque dq, size_t idx, void *data);
+void deq_init(Deque deq, size_t align);
+Deque deq_new(size_t align);
+void deq_cleanup(Deque deq);
+void deq_drop(Deque *deq);
+void *deq_push_back(Deque deq, void *data);
+void *deq_push_front(Deque deq, void *data);
+void *deq_pop_back(Deque deq);
+void *deq_pop_front(Deque deq);
+size_t deq_len(Deque deq);
+void *deq_get(Deque deq, size_t idx);
+void *deq_insert(Deque deq, size_t idx, void *data);
 
-void *deque_front(Deque dq);
-void *deque_back(Deque dq);
+void *deq_front(Deque deq);
+void *deq_back(Deque deq);
 
-void deque_deb_print(Deque dq);
+void deq_deb_print(Deque deq);
 
-void *deque_search_item(Deque dq, const void *data);
-void *deque_search_mem(Deque dq, const void *data, size_t len);
+void *deq_search_item(Deque deq, const void *data);
+void *deq_search_mem(Deque deq, const void *data, size_t len);
 
-Deque deque_from_arr(struct Array *arr);
-Deque deque_from_star(struct StatArr *star);
+Deque deq_from_arr(struct Array *arr);
+Deque deq_from_vec(struct Vec *vec);
 
 #endif // GARAGE_QUEUE_H

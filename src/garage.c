@@ -33,15 +33,15 @@ static inline void handle_signal(int sig) {
     switch(sig) {
         case SIGABRT:
             cleanup();
-            report("Aborted\n");
+            log_fmt("Aborted\n");
             exit(SIGABRT);
         case SIGSEGV:
             cleanup();
-            report("Segmentation fault\n");
+            log_fmt("Segmentation fault\n");
             exit(SIGSEGV);
         case SIGINT:
             cleanup();
-            report("Interrupted\n");
+            log_fmt("Interrupted\n");
             exit(SIGINT);
         case SIGUSR1:
             cleanup();
@@ -107,7 +107,7 @@ void cleanup(void) {
     free(garage);
 }
 
-void report(const char *msg, ...) {
+void log_fmt(const char *msg, ...) {
     va_list args;
     va_start(args, msg);
     if (logfd >= 0) vdprintf(logfd, msg, args);
@@ -115,11 +115,11 @@ void report(const char *msg, ...) {
 }
 
 void _abort(void) {
-    raise(SIGABRT);
+    raise(SIGABRT), __builtin_unreachable();
 }
 
 void gracefully_exit(void) {
-    raise(SIGUSR1);
+    raise(SIGUSR1), __builtin_unreachable();
 }
 
 int buffered_printf(const char *fmt, ...) {
@@ -164,4 +164,8 @@ void memswap(void *lhs, void *rhs, size_t len) {
 
 void fd_drop(int *fd) {
     if (fd && *fd != -1) close(*fd), *fd = -1;
+}
+
+void ptr_drop(void *ptr) {
+    if (ptr && *(void **)ptr) free(*(void **)ptr), *(void **)ptr = 0;
 }

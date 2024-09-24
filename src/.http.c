@@ -42,7 +42,7 @@ static Request parse_request(String req_str) {
     slice_trim(method, " \t\r\n", 4), slice_trim(slice, " \t\r\n", 4);
     RequestMethod req_method = req_method_from_slice(method);
     if (req_method == REQUEST_INVAL) return 0;
-    Slice url = slice_split_once(slice, " ");
+    Slice url = slice_split_once(slice, " ", 1);
     slice_trim(url, " ", 1);
     return req_new(req_method, url);
 }

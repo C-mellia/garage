@@ -8,29 +8,11 @@
 #include <garage/log.h>
 #include <garage/string.h>
 #include <garage/ascii.h>
-#include <garage/container.h>
 
+#include "./.string.c"
 // #include "./.search.c"
 
 #define READ_BUF_LEN 8
-
-static inline uint16_t byte_in_hex(uint8_t byte) {
-    char ch[2] = {0};
-    ch[0] = byte / 16 + (byte / 16 < 10? '0': 'a' - 10);
-    ch[1] = byte % 16 + (byte % 16 < 10? '0': 'a' - 10);
-    return *(uint16_t *) ch;
-}
-
-static void __string_from_file(int fd, String string, size_t buf_len) {
-    __label__ L0;
-    char buf[buf_len] = {};
-L0:
-    size_t prev_len = string->len;
-    int cnt = read(fd, buf, buf_len);
-    assert(cnt != -1, "%s:%d:%s: failed to read file", __FILE__, __LINE__, __func__);
-    arr_resize(string, string->len + cnt, 0), memcpy(arr_get(string, prev_len), buf, cnt);
-    if (cnt == (int)buf_len) goto L0;
-}
 
 String string_new() {
     return arr_new(1);
@@ -41,7 +23,7 @@ void string_cleanup(String string) {
 }
 
 void string_drop(String *string) {
-    if (string && *string) string_cleanup(*string), *string = 0;
+    if (string && *string) string_cleanup(*string), free(*string), *string = 0;
 }
 
 // little endian, so the lsb comes first

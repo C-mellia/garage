@@ -33,7 +33,7 @@ void handler_handle_func(Handler h, const char *route, handle_func_t func) {
     Slice method = slice_split_at(route_slice, slice_search_item(route_slice, "/"));
     if (method) slice_trim(method, " \t\n", 3);
     slice_trim(route_slice, " \t\n", 3);
-    Slice Cleanup(slice_drop) url = slice_split_once(route_slice, " ");
+    Slice Cleanup(slice_drop) url = slice_split_once(route_slice, " ", 1);
     HandlePack pack = handle_pack_new(method, url, func);
     arr_push_back(h->handle_funcs, &pack);
 }
