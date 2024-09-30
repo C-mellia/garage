@@ -9,8 +9,8 @@ struct Slice;
 struct RandomEngine;
 
 typedef struct Array {
-    size_t len, cap, align;
     void *mem;
+    size_t len, cap, align;
 } *Array;
 
 void arr_init(Array arr, size_t align);

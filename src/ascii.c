@@ -4,6 +4,7 @@
 #include <garage/garage.h>
 
 extern const char *const ch_type_str[__CH_COUNT];
+extern const char *const ch_str[128];
 
 CharType ch_type(char *ch) {
     if (ch_is_ws(ch)) {
@@ -105,14 +106,11 @@ int ch_deb_dprint(int fd, char *ch) {
     #define get_type_str (ch_type_str[type]? : "Inval CharType")
     if (!ch) return dprintf(fd, "(nil)");
     CharType type = ch_type(ch);
+    const char *str = (uint8_t)*ch < 128? ch_str[(uint8_t)*ch]: "Undefined Char";
     switch(type) {
-        case CH_NONE ... CH_WS: {
-            return dprintf(fd, "{type: '%s'}",
-                           get_type_str);
-        } break;
-        case CH_PUN ... CH_ALPHA: {
-            return dprintf(fd, "{type: '%s', sym: '%c'}",
-                           get_type_str, deref(char, ch));
+        case CH_NONE ... CH_ALPHA: {
+            return dprintf(fd, "{type: '%s', ch: '%s'}",
+                           get_type_str, str);
         } break;
         default: return dprintf(fd, "(inval CharType)");
     }
