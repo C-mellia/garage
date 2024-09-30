@@ -1,4 +1,13 @@
 #include <garage/ascii.h>
+#include <garage/input_tok.h>
+
+const char *const tok_type_str[] = {
+    [TOK_NONE] = "TOK_NONE",
+    [TOK_EOF] = "TOK_EOF",
+    [TOK_TEXT] = "TOK_TEXT",
+    [TOK_EQ_SPLIT] = "TOK_EQ_SPLIT",
+    [TOK_MINUS_SPLIT] = "TOK_MINUS_SPLIT",
+};
 
 const char *const ch_type_str[] = {
     [CH_NONE] = "^@",

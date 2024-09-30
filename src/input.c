@@ -1,9 +1,13 @@
+#include <string.h>
 #include <stdlib.h>
 
 #include <garage/input.h>
 #include <garage/string.h>
 #include <garage/slice.h>
 #include <garage/log.h>
+#include <garage/scanner.h>
+#include <garage/ascii.h>
+#include <garage/input_lex.h>
 
 static inline void __test_init(Test test, size_t align);
 
@@ -41,6 +45,11 @@ int test_deb_dprint(int fd, Test test) {
 
 int test_deb_print(Test test) {
     return test_deb_dprint(1, test);
+}
+
+void tests_from_file(Slice file, Array /* Test */tests) {
+    nul_check(Array, tests), nul_check(Slice, file);
+    InputLexer Cleanup(input_lexer_drop) input_lexer = input_lexer_new(file->mem, file->align, file->len);
 }
 
 static void __test_init(Test test, size_t align) {
