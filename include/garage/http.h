@@ -9,10 +9,10 @@
 #include <garage/string.h>
 #include <garage/slice.h>
 
-typedef struct ResponseWriter *ResponseWriter;
-typedef struct Request *Request;
+typedef struct response_writer *ResponseWriter;
+typedef struct request *Request;
 
-typedef enum ResponseStatus {
+typedef enum response_status {
     RESPONSE_INVAL=-1,
     RESPONSE_OK=200,
     RESPONSE_NOT_FOUND=404,
@@ -26,7 +26,7 @@ typedef enum ResponseStatus {
     __RESPONSE_COUNT,
 } ResponseStatus;
 
-typedef enum RequestMethod {
+typedef enum request_method {
     REQUEST_INVAL=-1,
     REQUEST_GET,
     REQUEST_POST,
@@ -42,30 +42,30 @@ typedef enum RequestMethod {
 
 typedef void (*handle_func_t) (ResponseWriter rw, Request req);
 
-struct Request {
+struct request {
     RequestMethod method;
     Slice url;
     // TODO: headers, body
 };
 
-struct ResponseWriter {
+struct response_writer {
     int status;
     Array/* String */ headers;
     String body;
 };
 
-typedef struct HandlePack {
+typedef struct handle_pack {
     RequestMethod method;
     regex_t url_reg;
     handle_func_t func;
 } *HandlePack;
 
-typedef struct Handler {
+typedef struct handler {
     Array/* HandlePack */ handle_funcs;
     handle_func_t default_handle;
 } *Handler;
 
-typedef struct Server {
+typedef struct server {
     Handler handler;
     Array incoming; // task queue;
     int done, exit_sig;

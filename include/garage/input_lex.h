@@ -4,7 +4,7 @@
 #include <garage/garage.h>
 #include <garage/input_tok.h>
 
-typedef struct InputLexer {
+typedef struct input_lexer {
     size_t ln, col;
 
     Phantom scnr;

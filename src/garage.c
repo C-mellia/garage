@@ -13,7 +13,7 @@
 #include <garage/garage.h>
 #include <garage/log.h>
 
-typedef struct Garage {
+typedef struct garage {
     char *logfname;
     int auto_report;
     int fallback_to_stderr;

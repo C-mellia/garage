@@ -5,11 +5,9 @@
 
 #define MAX_OFFS 0x10L
 
-typedef struct Sa {
+typedef struct sa {
     void *top;
     size_t cap, offs[MAX_OFFS], *off;
-    // size_t offs[MAX_OFFS];
-    // size_t *off;
     Phantom mem;
 } *Sa;
 
