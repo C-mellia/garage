@@ -50,6 +50,39 @@ int test_deb_print(Test test) {
 void tests_from_file(Slice file, Array /* Test */tests) {
     nul_check(Array, tests), nul_check(Slice, file);
     InputLexer Cleanup(input_lexer_drop) input_lexer = input_lexer_new(file->mem, file->align, file->len);
+    Array errs = (void *)input_lexer->errs;
+    Test Cleanup(test_drop) test = test_new(file->align);
+    int should_stop = 0, should_be_res = 0, should_push_back = 0;
+
+    for (; !should_stop;) {
+        InputTok Cleanup(input_tok_drop) input_tok = input_lexer_produce(input_lexer);
+        Slice input = (void *)test->input, res = (void *)test->res, slice = (void *)input_tok->slice;
+
+        if (errs->len) return;
+        switch(input_tok->type) {
+            case INPUT_TOK_EOF: {
+                should_stop = 1;
+                if (input->mem) should_push_back = 1;
+            } break;
+            case INPUT_TOK_TEXT: {
+                should_be_res
+                    ? should_be_res = 0, slice_copy(res, slice)
+                    : slice_copy(input, slice);
+            } break;
+            case INPUT_TOK_EQ_SPLIT: {
+                if (input->mem) should_push_back = 1;
+            } break;
+            case INPUT_TOK_MINUS_SPLIT: {
+                should_be_res = 1;
+            } break;
+            default: return;
+        }
+
+        if (should_push_back) {
+            arr_push_back(tests, &test), test = test_new(file->align);
+            should_push_back = 0, should_be_res = 0;
+        }
+    }
 }
 
 static void __test_init(Test test, size_t align) {

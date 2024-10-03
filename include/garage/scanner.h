@@ -5,7 +5,7 @@
 
 #include <garage/garage.h>
 
-typedef struct Scanner {
+typedef struct scanner {
     size_t pos;
 
     Phantom /* Array<String> */errs;

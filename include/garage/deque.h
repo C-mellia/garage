@@ -3,10 +3,10 @@
 
 #include <garage/array.h>
 
-struct Vec;
-struct Array;
+struct vec;
+struct array;
 
-typedef struct Deque {
+typedef struct deque {
     void *mem, *begin;
     size_t len, cap, align;
 } *Deque;
@@ -31,7 +31,7 @@ void deq_deb_print(Deque deq);
 void *deq_search_item(Deque deq, const void *data);
 void *deq_search_mem(Deque deq, const void *data, size_t len);
 
-Deque deq_from_arr(struct Array *arr);
-Deque deq_from_vec(struct Vec *vec);
+Deque deq_from_arr(struct array *arr);
+Deque deq_from_vec(struct vec *vec);
 
 #endif // GARAGE_QUEUE_H

@@ -23,6 +23,7 @@ typedef enum ResponseStatus {
     RESPONSE_HTTP_VERSION_NOT_SUPPORTED=505,
     RESPONSE_SERVICE_UNAVAILABLE=503,
     RESPONSE_GATEWAY_TIMEOUT=504,
+    __RESPONSE_COUNT,
 } ResponseStatus;
 
 typedef enum RequestMethod {

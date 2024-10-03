@@ -1,7 +1,7 @@
 #ifndef GARAGE_RESULT_H
 #define GARAGE_RESULT_H 1
 
-typedef struct Result {
+typedef struct result {
     int tag;
     size_t cap;
     Phantom data;

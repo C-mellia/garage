@@ -7,16 +7,16 @@
 #define eq_splitter "\n======"
 #define minus_splitter "\n------"
 
-typedef enum InputTokType {
-    TOK_NONE=0,
-    TOK_EOF,
-    TOK_TEXT,
-    TOK_EQ_SPLIT,
-    TOK_MINUS_SPLIT,
-    __TOK_COUNT,
+typedef enum input_tok_type {
+    INPUT_TOK_NONE=0,
+    INPUT_TOK_EOF,
+    INPUT_TOK_TEXT,
+    INPUT_TOK_EQ_SPLIT,
+    INPUT_TOK_MINUS_SPLIT,
+    __INPUT_TOK_COUNT,
 } InputTokType;
 
-typedef struct InputTok {
+typedef struct input_tok {
     InputTokType type;
     size_t ln, col;
 

@@ -26,6 +26,13 @@ Vec vec_zero(size_t align, size_t cap) {
     return vec;
 }
 
+Vec vec_clone(Vec vec) {
+    if (!vec) return 0;
+    Vec new_vec = vec_new(vec->align, vec->cap);
+    memcpy(new_vec->mem, vec->mem, vec->cap * vec->align);
+    return new_vec;
+}
+
 void vec_cleanup(Vec vec) {
     (void) vec;
 }
@@ -37,13 +44,6 @@ void vec_drop(Vec *vec) {
 void *vec_get(Vec vec, size_t idx) {
     nul_check(Vec, vec);
     return idx < vec->cap? vec->mem + idx * vec->align: 0;
-}
-
-Vec vec_clone(Vec vec) {
-    if (!vec) return 0;
-    Vec new_vec = vec_new(vec->align, vec->cap);
-    memcpy(new_vec->mem, vec->mem, vec->cap * vec->align);
-    return new_vec;
 }
 
 int vec_deb_dprint(int fd, Vec vec) {
@@ -58,14 +58,14 @@ int vec_deb_print(Vec vec) {
 
 int vec_hex_dprint(int fd, Vec vec) {
     if (!vec) return dprintf(fd, "(nil)");
-    Array str = arr_new(1);
+    String Cleanup(string_drop) str = string_new();
     string_fmt(str, "[");
     for (size_t i = 0; i < vec->cap; ++i) {
         string_fmt(str, "0x"), string_from_anyint_hex(str, vec_get(vec, i), vec->align);
         if (i + 1 < vec->cap) string_fmt(str, ", ");
     }
     string_fmt(str, "]");
-    return ({ int len = string_dprint(fd, str); arr_cleanup(str); len; });
+    return string_dprint(fd, str);
 }
 
 int vec_hex_print(Vec vec) {

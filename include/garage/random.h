@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef struct RandomEngine {
+typedef struct random_engine {
     int fd;
 } *RandomEngine;
 

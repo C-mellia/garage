@@ -6,10 +6,10 @@
 // A text file format to seperate different test cases and expected output
 // respectively
 
-struct Slice;
-struct Array;
+struct slice;
+struct array;
 
-typedef struct Test {
+typedef struct test {
     Phantom input;
 
     void *_input_mem;
@@ -28,6 +28,6 @@ void test_drop(Test *test);
 
 int test_deb_dprint(int fd, Test test);
 int test_deb_print(Test test);
-void tests_from_file(struct Slice *file, struct Array /* Test */*tests);
+void tests_from_file(struct slice *file, struct array /* Test */*tests);
 
 #endif // GARAGE_INPUT_H

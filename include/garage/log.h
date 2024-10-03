@@ -14,7 +14,7 @@
     (void) ((cond) || (panic(msg, ##__VA_ARGS__), 0))
 #define panic(msg, ...) \
     (probe(), log_fmt(msg, ##__VA_ARGS__), _abort())
-#define nul_check(Type, obj) assert((obj), #Type " is NULL at this point\n")
+#define nul_check(Type, obj) assert((obj), #Type "(" #obj ") is NULL at this point\n")
 #define alloc_check(allocate, ptr, size) assert((ptr), #allocate " failed for size of 0x%lx\n", size);
 
 

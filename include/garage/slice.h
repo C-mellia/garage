@@ -3,9 +3,9 @@
 
 #include <stddef.h>
 
-struct Array;
+struct array;
 
-typedef struct Slice {
+typedef struct slice {
     void *mem;
     size_t align, len;
 } *Slice;
@@ -13,9 +13,12 @@ typedef struct Slice {
 // slice.c
 void slice_init(Slice slice, void *mem, size_t align, size_t len);
 Slice slice_new(void *mem, size_t align, size_t len);
-Slice slice_from_arr(struct Array *arr);
-Slice arr_range(struct Array *arr, size_t begin, size_t end);
-Slice arr_range_inc(struct Array *arr, size_t front, size_t back);
+Slice slice_copy(Slice slice, Slice oth);
+Slice slice_move(Slice slice, Slice oth);
+Slice slice_clone(Slice slice);
+Slice slice_from_arr(struct array *arr);
+Slice arr_range(struct array *arr, size_t begin, size_t end);
+Slice arr_range_inc(struct array *arr, size_t front, size_t back);
 Slice slice_clone(Slice slice);
 void slice_cleanup(Slice slice);
 void slice_drop(Slice *slice);
@@ -41,8 +44,8 @@ void slice_trim(Slice slice, void *mem, size_t len);
 void slice_trim_left(Slice slice, void *mem, size_t len);
 void slice_trim_right(Slice slice, void *mem, size_t len);
 
-void slice_split(struct Array/* Slice */ *arr, Slice slice, void *mem, size_t len);
-void slice_split_mem(struct Array/* Slice */ *arr, Slice slice, void *mem, size_t len);
+void slice_split(struct array/* Slice */ *arr, Slice slice, void *mem, size_t len);
+void slice_split_mem(struct array/* Slice */ *arr, Slice slice, void *mem, size_t len);
 Slice slice_split_once(Slice slice, void *item, size_t len);
 Slice slice_split_once_mem(Slice slice, void *mem, size_t len);
 Slice slice_split_at(Slice slice, void *pos);

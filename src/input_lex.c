@@ -82,28 +82,28 @@ InputTok input_lexer_produce(InputLexer input_lexer) {
 #define ch_is_text(peek) (ch_is_alpha(peek) || ch_is_num(peek) || ch_is_pun(peek) || ch_is_ws(peek))
 
     nul_check(InputLexer, input_lexer);
-    InputTok input_tok = input_tok_new(TOK_NONE, input_lexer->ln, input_lexer->col, input_lexer_peek(input_lexer, 0), 0);
+    InputTok input_tok = input_tok_new(INPUT_TOK_NONE, input_lexer->ln, input_lexer->col, input_lexer_peek(input_lexer, 0), 0);
     Slice slice = (void *)input_tok->slice;
     int should_stop = 0, should_consume = 0, should_peek = 0;
 
     for (; !should_stop;) {
         void *front = input_lexer_peek(input_lexer, 0), *peek = input_lexer_peek(input_lexer, should_peek);
         switch(input_tok->type) {
-            case TOK_NONE: {
+            case INPUT_TOK_NONE: {
                 if (!peek) {
-                    input_tok->type = TOK_EOF, should_consume = 0;
+                    input_tok->type = INPUT_TOK_EOF, should_consume = 0;
                 } else if (ch_is_text(peek)) {
-                    input_tok->type = TOK_TEXT, should_consume = 0;
+                    input_tok->type = INPUT_TOK_TEXT, should_consume = 0;
                 } else {
                     invalid_char("Unhandled character occured at the beginning of input_tokenization"), should_stop = 1, should_consume = 0;
                 }
             } break;
 
-            case TOK_EOF: {
+            case INPUT_TOK_EOF: {
                 should_stop = 1, should_consume = should_peek, should_peek = 0;
             } break;
 
-            case TOK_TEXT: {
+            case INPUT_TOK_TEXT: {
                 // ch_deb_print(peek), printf("\n");
                 // printf("%d: %.*s\n", should_peek, should_peek, (char *)front);
                 if (!peek) {
@@ -129,7 +129,7 @@ InputTok input_lexer_produce(InputLexer input_lexer) {
                         //   x                   ^
                         ++should_peek, should_consume = 0;
                     } else if (!slice->len) {
-                        should_consume = should_peek, should_peek = 0, input_tok->type = TOK_EQ_SPLIT;
+                        should_consume = should_peek, should_peek = 0, input_tok->type = INPUT_TOK_EQ_SPLIT;
                     } else {
                         should_stop = 1, should_consume = 0;
                     }
@@ -137,7 +137,7 @@ InputTok input_lexer_produce(InputLexer input_lexer) {
                     if ((size_t)should_peek + 1 < sizeof minus_splitter) {
                         ++should_peek, should_consume = 0;
                     } else if (!slice->len) {
-                        should_consume = should_peek, should_peek = 0, input_tok->type = TOK_MINUS_SPLIT;
+                        should_consume = should_peek, should_peek = 0, input_tok->type = INPUT_TOK_MINUS_SPLIT;
                     } else {
                         should_stop = 1, should_consume = 0;
                     }
@@ -150,7 +150,7 @@ InputTok input_lexer_produce(InputLexer input_lexer) {
                 }
             } break;
 
-            case TOK_EQ_SPLIT: {
+            case INPUT_TOK_EQ_SPLIT: {
                 if (!peek) {
                     should_stop = 1, should_consume = 0;
                 } else if (ch_is(peek, "\n", 1)) {
@@ -162,7 +162,7 @@ InputTok input_lexer_produce(InputLexer input_lexer) {
                 }
             } break;
 
-            case TOK_MINUS_SPLIT: {
+            case INPUT_TOK_MINUS_SPLIT: {
                 if (!peek) {
                     should_stop = 1, should_consume = 0;
                 } else if (ch_is(peek, "\n", 1)) {

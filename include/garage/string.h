@@ -6,10 +6,16 @@
 #include <garage/garage.h>
 #include <garage/array.h>
 
-typedef Array String;
+typedef struct string {
+    Phantom arr;
+
+    void *_mem;
+    size_t _len, _cap, _align;
+} *String;
 
 // most of the function push additional item to the back of array
 
+void string_init(String string);
 String string_new();
 void string_from_anyint_hex(String string, const void *data, size_t align);
 void string_from_file(int fd, String string);

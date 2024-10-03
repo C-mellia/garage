@@ -23,6 +23,21 @@ Slice slice_new(void *mem, size_t align, size_t len) {
     return __slice_init(slice, mem, align, len), slice;
 }
 
+Slice slice_copy(Slice slice, Slice oth) {
+    nul_check(Slice, slice), nul_check(Slice, oth);
+    return __slice_init(slice, oth->mem, oth->align, oth->len), slice;
+}
+
+Slice slice_move(Slice slice, Slice oth) {
+    nul_check(Slice, slice), nul_check(Slice, oth);
+    return __slice_init(slice, oth->mem, oth->align, oth->len), memset(oth, 0, sizeof *oth), slice;
+}
+
+Slice slice_clone(Slice slice) {
+    if (!slice) return 0;
+    return slice_new(slice->mem, slice->align, slice->len);
+}
+
 Slice slice_from_arr(Array arr) {
     if (!arr) return 0;
     return slice_new(arr->mem, arr->align, arr->len);
@@ -128,7 +143,7 @@ Slice slice_split_once_mem(Slice slice, void *mem, size_t len) {
 }
 
 int slice_deb_dprint(int fd, Slice slice) {
-    if (!slice) return dprintf(fd, "(nil)");
+    if (!slice || !slice->mem) return dprintf(fd, "(nil)");
     return dprintf(fd, "{mem: %p, align: %zu, len: %zu}",
                    slice->mem, slice->align, slice->len);
 }
@@ -166,7 +181,7 @@ Slice slice_split_at_idx(Slice slice, size_t idx) {
 }
 
 int slice_dprint(int fd, Slice slice) {
-    if (!slice) return dprintf(fd, "(nil)");
+    if (!slice || !slice->mem) return dprintf(fd, "(nil)");
     return dprintf(fd, "%.*s", (int) slice->len, (char *)slice->mem);
 }
 
@@ -176,7 +191,7 @@ int slice_print(Slice slice) {
 
 int slice_hex_dprint(int fd, Slice slice) {
     if (!slice) return dprintf(fd, "(nil)");
-    String string = string_new();
+    String Cleanup(string_drop) string = string_new();
     string_fmt(string, "[");
     for (size_t i = 0; i < slice->len; ++i) {
         string_fmt(string, "0x");
@@ -184,7 +199,7 @@ int slice_hex_dprint(int fd, Slice slice) {
         if (i + 1 < slice->len) string_fmt(string, ", ");
     }
     string_fmt(string, "]");
-    return ({ int len = string_dprint(fd, string); string_cleanup(string), len; });
+    return string_dprint(fd, string);
 }
 
 int slice_hex_print(Slice slice) {
@@ -199,9 +214,4 @@ Slice arr_range(Array arr, size_t begin, size_t end) {
 Slice arr_range_inc(Array arr, size_t front, size_t back) {
     if (!arr) return 0;
     return slice_new(arr->mem + front * arr->align, arr->align, back - front + 1);
-}
-
-Slice slice_clone(Slice slice) {
-    if (!slice) return 0;
-    return slice_new(slice->mem, slice->align, slice->len);
 }

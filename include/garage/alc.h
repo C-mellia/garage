@@ -1,12 +1,12 @@
 #ifndef GARAGE_ALC_H
 #   define GARAGE_ALC_H 1
 
-typedef struct AlcNode {
-    struct AlcNode *next, *prev;
+typedef struct alc_node {
+    struct alc_node *next, *prev;
     size_t len;
 } *AlcNode;
 
-typedef struct Alc {
+typedef struct alc {
     AlcNode begin;
     size_t cap;
 } *Alc;

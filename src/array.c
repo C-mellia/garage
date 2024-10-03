@@ -28,6 +28,27 @@ Array arr_new(size_t align) {
     return __arr_init(arr, align), arr;
 }
 
+Array arr_copy(Array arr, Array oth) {
+    nul_check(Array, arr), nul_check(Array, oth);
+    arr_cleanup(arr), arr->mem = oth->mem, arr->len = oth->len, arr->cap = oth->cap, arr->align = oth->align;
+    return arr;
+}
+
+Array arr_move(Array arr, Array oth) {
+    nul_check(Array, arr), nul_check(Array, oth);
+    arr_cleanup(arr), arr->mem = oth->mem, arr->len = oth->len, arr->cap = oth->cap, arr->align = oth->align;
+    memset(oth, 0, sizeof *oth);
+    return arr;
+}
+
+Array arr_clone(Array arr) {
+    if (!arr) return 0;
+    Array new_arr = arr_new(arr->align);
+    if (!arr_check_cap(new_arr, arr->len)) memcpy(new_arr->mem, arr->mem, arr->len * arr->align);
+    new_arr->len = arr->len;
+    return new_arr;
+}
+
 void arr_cleanup(Array arr) {
     if (!arr) return;
     if (arr->mem) free(arr->mem);
@@ -126,14 +147,6 @@ int arr_resize(Array arr, size_t len, const void *data) {
     return res;
 }
 
-Array arr_clone(Array arr) {
-    if (!arr) return 0;
-    Array new_arr = arr_new(arr->align);
-    if (arr_check_cap(new_arr, arr->len) == 0) memcpy(new_arr->mem, arr->mem, arr->len * arr->align);
-    new_arr->len = arr->len;
-    return new_arr;
-}
-
 int arr_reinterp(Array arr, size_t align) {
     nul_check(Array, arr);
     if (!align || arr->align == align) return -1;
@@ -153,15 +166,15 @@ void *arr_dup_mem_zero_end(Array arr) {
 
 int arr_hex_dprint(int fd, Array arr) {
     if (!arr) return dprintf(fd, "(nil)");
-    Array str = arr_new(1);
-    string_fmt(str, "[");
+    String Cleanup(string_drop) string = string_new();
+    string_fmt(string, "[");
     for (size_t i = 0; i < arr->len; ++i) {
-        string_fmt(str, "0x");
-        string_from_anyint_hex(str, arr_get(arr, i), arr->align);
-        if (i + 1 < arr->len) string_fmt(str, ", ");
+        string_fmt(string, "0x");
+        string_from_anyint_hex(string, arr_get(arr, i), arr->align);
+        if (i + 1 < arr->len) string_fmt(string, ", ");
     }
-    string_fmt(str, "]");
-    return ({ int len = string_dprint(fd, str); arr_cleanup(str), len; });
+    string_fmt(string, "]");
+    return string_dprint(fd, string);
 }
 
 int arr_hex_print(Array arr) {

@@ -14,12 +14,22 @@
 
 #define READ_BUF_LEN 8
 
+static inline void __string_init(String string);
+
+void string_init(String string) {
+    nul_check(String, string);
+    __string_init(string);
+}
+
 String string_new() {
-    return arr_new(1);
+    String string = malloc(sizeof *string);
+    alloc_check(malloc, string, sizeof *string);
+    return __string_init(string), string;
 }
 
 void string_cleanup(String string) {
-    arr_cleanup(string);
+    Array arr = (void *)string->arr;
+    arr_cleanup(arr);
 }
 
 void string_drop(String *string) {
@@ -28,12 +38,13 @@ void string_drop(String *string) {
 
 // little endian, so the lsb comes first
 void string_from_anyint_hex(String string, const void *data, size_t align) {
-    assert(string, "String is not initialized\n");
+    nul_check(String, string);
+    Array arr = (void *)string->arr;
     for (size_t i = 0; i < align; ++i) {
         uint16_t hex = byte_in_hex(deref(uint8_t, data + i));
         void *hex_p = &hex;
-        arr_push_back(string, hex_p);
-        arr_push_back(string, hex_p + 1);
+        arr_push_back(arr, hex_p);
+        arr_push_back(arr, hex_p + 1);
     }
 }
 
@@ -54,7 +65,8 @@ void string_fmt(String string, const char *fmt, ...) {
 
 int string_dprint(int fd, String string) {
     assert(string, "String not initialized\n");
-    return write(fd, string->mem, string->len * string->align);
+    Array arr = (void *)string->arr;
+    return write(fd, arr->mem, arr->len * arr->align);
 }
 
 int string_print(String string) {
@@ -71,4 +83,9 @@ void string_fmt_func(String string, Dprint dprint, void *obj) {
     assert(fd != -1, "Failed to redirect dprint\n");
     string_from_file(fd, string);
     close(fd);
+}
+
+static inline void __string_init(String string) {
+    Array arr = (void *)string->arr;
+    arr_init(arr, sizeof(uint8_t));
 }

@@ -3,10 +3,10 @@
 
 #include <garage/garage.h>
 
-struct Array;
-struct Deque;
+struct array;
+struct deque;
 
-typedef struct Vec {
+typedef struct vec {
     size_t align, cap;
     Phantom mem;
 } *Vec;
@@ -14,9 +14,9 @@ typedef struct Vec {
 void vec_init(Vec vec, size_t align, size_t cap);
 Vec vec_new(size_t align, size_t cap);
 Vec vec_zero(size_t align, size_t cap);
+Vec vec_clone(Vec vec);
 void vec_cleanup(Vec vec);
 void *vec_get(Vec vec, size_t idx);
-Vec vec_clone(Vec vec);
 void vec_reinterp(Vec vec, size_t align);
 
 int vec_deb_dprint(int fd, Vec vec);
@@ -28,7 +28,7 @@ int vec_hex_print(Vec vec);
 void *vec_search_item(Vec vec, const void *data);
 void *vec_search_mem(Vec vec, const void *data, size_t len);
 
-Vec vec_from_arr(struct Array *arr);
-Vec vec_from_deque(struct Deque *dq);
+Vec vec_from_arr(struct array *arr);
+Vec vec_from_deque(struct deque *dq);
 
 #endif // GARAGE_VEC_H

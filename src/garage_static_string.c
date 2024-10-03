@@ -1,12 +1,16 @@
 #include <garage/ascii.h>
 #include <garage/input_tok.h>
+#include <garage/slice.h>
+#include <garage/http.h>
 
-const char *const tok_type_str[] = {
-    [TOK_NONE] = "TOK_NONE",
-    [TOK_EOF] = "TOK_EOF",
-    [TOK_TEXT] = "TOK_TEXT",
-    [TOK_EQ_SPLIT] = "TOK_EQ_SPLIT",
-    [TOK_MINUS_SPLIT] = "TOK_MINUS_SPLIT",
+#define SLICE_CONST(LIT) { .mem = LIT, .align = 1, .len = sizeof LIT - 1 }
+
+const char *const input_tok_type_str[] = {
+    [INPUT_TOK_NONE] = "Input Token None",
+    [INPUT_TOK_EOF] = "Input Token End of file",
+    [INPUT_TOK_TEXT] = "Input Token Texts",
+    [INPUT_TOK_EQ_SPLIT] = "Input Token Equals Splitter",
+    [INPUT_TOK_MINUS_SPLIT] = "Input Token Minus Splitter",
 };
 
 const char *const ch_type_str[] = {
@@ -148,4 +152,22 @@ const char *const ch_str[] = {
     ['\175'] = "}",
     ['\176'] = "~",
     ['\177'] = "DEL",
+};
+
+const struct slice res_str[] = {
+    [RESPONSE_OK] = SLICE_CONST("OK"),
+    [RESPONSE_NOT_FOUND] = SLICE_CONST("NOT FOUND"),
+    [RESPONSE_BAD_REQUEST] = SLICE_CONST("BAD REQUEST"),
+};
+
+const struct slice req_str[] = {
+    [REQUEST_GET] = SLICE_CONST("GET"),
+    [REQUEST_POST] = SLICE_CONST("POST"),
+    [REQUEST_PUT] = SLICE_CONST("PUT"),
+    [REQUEST_DELETE] = SLICE_CONST("DELETE"),
+    [REQUEST_HEAD] = SLICE_CONST("HEAD"),
+    [REQUEST_OPTIONS] = SLICE_CONST("OPTIONS"),
+    [REQUEST_CONNECT] = SLICE_CONST("CONNECT"),
+    [REQUEST_TRACE] = SLICE_CONST("TRACE"),
+    [REQUEST_PATCH] = SLICE_CONST("PATCH"),
 };

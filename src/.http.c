@@ -1,22 +1,7 @@
 #define SLICE_CONST(__str, __len) { .mem = __str, .align = 1, .len = __len }
 
-static struct Slice res_str[] = {
-    [RESPONSE_OK] = SLICE_CONST("OK", 2),
-    [RESPONSE_NOT_FOUND] = SLICE_CONST("NOT FOUND", 9),
-    [RESPONSE_BAD_REQUEST] = SLICE_CONST("BAD REQUEST", 11),
-};
-
-static struct Slice req_str[] = {
-    [REQUEST_GET] = SLICE_CONST("GET", 3),
-    [REQUEST_POST] = SLICE_CONST("POST", 4),
-    [REQUEST_PUT] = SLICE_CONST("PUT", 3),
-    [REQUEST_DELETE] = SLICE_CONST("DELETE", 6),
-    [REQUEST_HEAD] = SLICE_CONST("HEAD", 4),
-    [REQUEST_OPTIONS] = SLICE_CONST("OPTIONS", 7),
-    [REQUEST_CONNECT] = SLICE_CONST("CONNECT", 7),
-    [REQUEST_TRACE] = SLICE_CONST("TRACE", 5),
-    [REQUEST_PATCH] = SLICE_CONST("PATCH", 5),
-};
+extern const struct slice res_str[__RESPONSE_COUNT];
+extern const struct slice req_str[__REQUEST_COUNT];
 
 static inline RequestMethod req_method_from_slice(Slice slice) {
     for (size_t i = REQUEST_GET; i < __REQUEST_COUNT; ++i) {
@@ -36,7 +21,8 @@ static inline RequestMethod req_method_from_slice(Slice slice) {
 // HEADER_NAME: VALUE
 // BODY
 static Request parse_request(String req_str) {
-    Slice Cleanup(slice_drop) slice = slice_from_arr(req_str);
+    // Array req_str_arr = (void *)req_str->arr;
+    Slice Cleanup(slice_drop) slice = slice_from_arr((void *)req_str->arr);
     Slice Cleanup(slice_drop) method = slice_split_at(slice, slice_search_item(slice, "/"));
     if (!method) return 0;
     slice_trim(method, " \t\r\n", 4), slice_trim(slice, " \t\r\n", 4);
