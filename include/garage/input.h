@@ -5,6 +5,44 @@
 
 // A text file format to seperate different test cases and expected output
 // respectively
+//
+// `======` is used to seperate test cases
+// `------` is used to seperate input and expected output
+// splitters should be at the beginning of the line, and any character appeared
+// before the end of line is ommited
+//
+// e.g.
+//
+// ```
+// Foo bar
+// ------
+// Foo bar
+// aosijdoi
+// ======[test 0]
+// Foo bar
+// ======[test 1]
+// ```
+//
+// for two test cases, the first one will have an input of
+//
+// ```
+// Foo bar
+// ```
+//
+// and an expected output of
+//
+// ```
+// Foo bar
+// aosijdoi
+// ```
+//
+// and the second one will have an input of
+//
+// ```
+// Foo bar
+// ```
+//
+// however no expected output
 
 struct slice;
 struct array;
