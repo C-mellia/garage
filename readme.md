@@ -56,6 +56,41 @@ int val = foo_get((void *) baz->foo); // expected `10`
 char *str = bar_get((void *) baz->bar); // expected `"hello"`
 ```
 
+However, there will be a issue regarding the position of the `Phantom` field
+because struct alignements. To give an example:
+
+```c
+typedef struct Foo {
+    int val;
+    Phantom bar;
+    char *_str;
+} *Foo;
+```
+
+The value of `_str` will not match up with the `str` field of the `Bar` struct
+when the `bar` field is casted to `Bar` type. One way to find out why mismatch
+happens is by running:
+
+```c
+printf("%lu, %lu, %lu\n", offsetof(Foo, bar), offsetof(Foo, _str), offsetof(Bar, str));
+```
+
+Normally c-compiler will pad the struct among its fields, instead of
+packing the fields densely, which helps to avoid 2 cycles of memory access to
+fetch the field by packing fields, whose size summed together is less than the
+number of memory banks.
+
+Field `bar` will be positioned by the end of field `val` because `sizeof val +
+sizeof bar` is less than 8 which is a common alignment for 64-bit systems, and,
+field `_str` will positioned at the 8th byte of the struct, which causes the
+mismatch.
+
+Adding an additional attribute `__attribute__((packed))` to the struct will
+solve the issue, or by forcefully specifying the `aligned` attribute of the
+`bar` field to 8 also solves the issue.
+
+```c
+
 ### <a name="cleanup"></a> `cleanup` functions
 
 - `void <type>_cleanup(<type> obj);`
@@ -76,6 +111,17 @@ additional resources when the object goes out of scope automatically.
 ### <a name="drop"></a> `drop` functions
 
 - `void <type>_drop(<type> *obj);`
+
+### <a name="pop_front/back"></a> `pop_front` and `pop_back` functions
+
+- `void *<type>_pop_front(<type> *obj);`
+- `void *<type>_pop_back(<type> *obj);`
+
+These functions will return the pointer to the address where the block of
+memory that is supposed to be popped located, however, this block of memory
+will soon be invalidated after several other actions of pushings and poppings,
+but it will be the user's responsibilities to copy the memory to which the
+pointer points before they got invalidated.
 
 ## Structure
 

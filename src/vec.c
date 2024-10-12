@@ -69,7 +69,7 @@ int vec_hex_dprint(int fd, Vec vec) {
 }
 
 int vec_hex_print(Vec vec) {
-    return vec_hex_dprint(1, vec);
+    return fflush(stdout), vec_hex_dprint(1, vec);
 }
 
 void vec_reinterp(Vec vec, size_t align) {

@@ -5,11 +5,10 @@
 #include <garage/garage.h>
 #include <garage/deque.h>
 #include <garage/log.h>
+#include <garage/string.h>
+#include <garage/slice.h>
 
 #include "./.deque.c"
-
-static __attribute__((unused))
-void __deq_init(Deque deq, size_t align);
 
 void deq_init(Deque deq, size_t align) {
     if (!deq) return;
@@ -22,81 +21,137 @@ Deque deq_new(size_t align) {
     return __deq_init(deq, align), deq;
 }
 
-void *deq_push_back(Deque deq, void *mem) {
-    nul_check(Deque, deq);
-    if (!mem) return 0;
-    deq_check_cap(deq, deq->len + 1);
-    // deq->len is not used in the function call
-    return deq_wrap_memcpy_from(deq, mem, deq->len++, deq->align);
-}
-
 void deq_cleanup(Deque deq) {
     if (!deq) return;
-    if (deq->mem) free(deq->mem);
-    deq_init(deq, deq->align);
+    if (deq->_mem) free(deq->_mem);
+    deq->_mem = 0, deq->begin = deq->len = deq->_cap = 0;
 }
 
 void deq_drop(Deque *deq) {
     if (deq && *deq) deq_cleanup(*deq), free(*deq), *deq = 0;
 }
 
+void *deq_push_back(Deque deq, void *mem) {
+    nul_check(Deque, deq);
+    deq_check_cap(deq, deq->len + 1);
+    if (mem) {
+        return memcpy(__deq_get(deq, deq->len++), mem, deq->_align);
+    } else {
+        return memset(__deq_get(deq, deq->len++), 0, deq->_align);
+    }
+}
+
 void *deq_push_front(Deque deq, void *mem) {
     nul_check(Deque, deq);
-    if (!mem) return 0;
+    Slice slice = (void *)deq->slice;
     deq_check_cap(deq, ++deq->len);
-    deq->begin = bottom_clamp(deq->mem, deq->begin - deq->align, deq->cap * deq->align);
-    return deq_wrap_memcpy_from(deq, mem, 0, deq->align);
+    deq->begin = deq->begin? deq->begin - 1: deq->_cap - 1;
+    if (mem) {
+        return memcpy(__slice_get(slice, deq->begin), mem, deq->_align);
+    } else {
+        return memset(__slice_get(slice, deq->begin), 0, deq->_align);
+    }
 }
 
 void *deq_pop_back(Deque deq) {
     nul_check(Deque, deq);
     if (!deq->len) return 0;
-    return top_clamp(deq->mem + deq->cap * deq->align, deq->begin + --deq->len * deq->align, deq->cap * deq->align);
+    return __deq_get(deq, --deq->len);
 }
 
 void *deq_pop_front(Deque deq) {
-    void *begin;
     nul_check(Deque, deq);
+    Slice slice = (void *)deq->slice;
     if (!deq->len) return 0;
-    begin = deq->begin;
-    deq->begin = top_clamp(deq->mem + deq->cap * deq->align, deq->begin + deq->align, deq->cap * deq->align);
+    void *begin = __slice_get(slice, deq->begin);
+    deq->begin = deq->begin + 1 < deq->_cap? deq->begin + 1: 0;
     return --deq->len, begin;
 }
 
-void deq_deb_print(Deque deq) {
-    if (!deq) {
-        printf("(nil)");
+int deq_deb_dprint(int fd, Deque deq) {
+    if (!deq) dprintf(fd, "(nil)");
+    String Cleanup(string_drop) string = string_new();
+    string_fmt(string, "{begin: 0x%lx, len: %lu, slice: ", deq->begin, deq->len);
+    string_fmt_func(string, (void *)slice_deb_dprint, (void *)deq->slice);
+    string_fmt(string, "}");
+    return string_dprint(fd, string);
+}
+
+int deq_deb_print(Deque deq) {
+    return fflush(stdout), deq_deb_dprint(1, deq);
+}
+
+int deq_hex_dprint(int fd, Deque deq) {
+    if (!deq) return dprintf(fd, "(nil)");
+    String Cleanup(string_drop) string = string_new();
+    string_fmt(string, "[");
+    for (size_t i = 0; i < deq->len; ++i) {
+        string_fmt(string, "0x");
+        string_from_anyint_hex(string, __deq_get(deq, i), deq->_align);
+        if (i + 1 < deq->len) string_fmt(string, ", ");
+    }
+    string_fmt(string, "]");
+    return string_dprint(fd, string);
+}
+
+int deq_hex_print(Deque deq) {
+    return fflush(stdout), deq_hex_dprint(1, deq);
+}
+
+int deq_idx_dprint(int fd, Deque deq) {
+    if (!deq) return dprintf(fd, "(nil)");
+    String Cleanup(string_drop) string = string_new();
+    string_fmt(string, "[");
+    for (size_t i = 0; i < deq->len; ++i) {
+        size_t off = (__deq_get(deq, i) - deq->_mem) / deq->_align;
+        string_fmt(string, "+0x%lx", off);
+        if (i + 1 < deq->len) string_fmt(string, ", ");
+    }
+    string_fmt(string, "]");
+    return string_dprint(fd, string);
+}
+
+int deq_idx_print(Deque deq) {
+    return fflush(stdout), deq_idx_dprint(1, deq);
+}
+
+void *deq_remove(Deque deq, size_t idx) {
+    nul_check(Deque, deq);
+    if (idx >= deq->len) return 0;
+    uint8_t buf[deq->_align];
+    memcpy(buf, __deq_get(deq, idx), sizeof buf);
+    deq_wrap_memmove(deq, idx, idx + 1, deq->len - idx - 1);
+    return memcpy(__deq_get(deq, deq->len--), buf, sizeof buf); // end of queue
+}
+
+void *deq_insert(Deque deq, size_t idx, void *mem) {
+    nul_check(Deque, deq);
+    if (idx > deq->len) return 0;
+    deq_check_cap(deq, deq->len + 1);
+    deq_wrap_memmove(deq, idx + 1, idx, deq->len++ - idx);
+    if (mem) {
+        return memcpy(__deq_get(deq, idx), mem, deq->_align);
     } else {
-        printf("{mem: %p, begin: %p, len: %lu, cap: %lu, align: %lu}",
-               deq->mem, deq->begin, deq->len, deq->cap, deq->align);
+        return memset(__deq_get(deq, idx), 0, deq->_align);
     }
 }
 
 void *deq_get(Deque deq, size_t idx) {
     nul_check(Deque, deq);
-    return idx < deq->len? top_clamp(deq->mem + deq->cap * deq->align, deq->begin + idx * deq->align, deq->len * deq->align): 0;
+    return idx < deq->len? __deq_get(deq, idx): 0;
 }
 
 void *deq_front(Deque deq) {
     nul_check(Deque, deq);
-    return deq_get(deq, 0);
+    return deq->len? __deq_get(deq, 0): 0;
 }
 
 void *deq_back(Deque deq) {
     nul_check(Deque, deq);
-    return deq->len? deq_get(deq, deq->len - 1): 0;
+    return deq->len? __deq_get(deq, deq->len - 1): 0;
 }
 
-void *deq_insert(Deque deq, size_t idx, void *mem) {
+size_t deq_len(Deque deq) {
     nul_check(Deque, deq);
-    if (idx > deq->len || !mem) return 0;
-    deq_check_cap(deq, deq->len + 1);
-    size_t len = (deq->len++ - idx) * deq->align;
-    void *buf = alloca(len);
-    deq_wrap_memcpy_to(buf, deq, idx, len), deq_wrap_memcpy_from(deq, buf, idx + 1, len);
-    return deq_wrap_memcpy_from(deq, mem, idx, deq->align);
-}
-
-static void __deq_init(Deque deq, size_t align) {
-    memset(deq, 0, sizeof *deq), deq->align = align;
+    return deq->len;
 }

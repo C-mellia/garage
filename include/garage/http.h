@@ -42,16 +42,33 @@ typedef enum request_method {
 
 typedef void (*handle_func_t) (ResponseWriter rw, Request req);
 
-struct request {
-    RequestMethod method;
-    Slice url;
-    // TODO: headers, body
-};
+typedef struct handler {
+    Array/* HandlePack */ packs;
+    handle_func_t default_handle;
+} *Handler;
+
+typedef struct server {
+    Handler handler; // reference
+    Array incoming; // task queue;
+    int done, exit_sig, listen_s;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    struct {
+        const char *port;
+        size_t worker_threads;
+    } config;
+} *Server;
 
 struct response_writer {
     int status;
     Array/* String */ headers;
     String body;
+};
+
+struct request {
+    RequestMethod method;
+    Slice url;
+    // TODO: headers, body
 };
 
 typedef struct handle_pack {
@@ -60,49 +77,47 @@ typedef struct handle_pack {
     handle_func_t func;
 } *HandlePack;
 
-typedef struct handler {
-    Array/* HandlePack */ handle_funcs;
-    handle_func_t default_handle;
-} *Handler;
-
-typedef struct server {
-    Handler handler;
-    Array incoming; // task queue;
-    int done, exit_sig;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    int listen_s;
-    struct {
-        const char *port;
-        size_t worker_threads;
-    } config;
-} *Server;
-
+void handler_init(Handler handler);
 Handler handler_new();
-void handler_cleanup(Handler h);
-void handler_drop(Handler *h);
+void handler_cleanup(Handler handler);
+void handler_drop(Handler *handler);
+
+int handler_deb_dprint(int fd, Handler handler);
+int handler_deb_print(Handler handler);
+
 void handler_handle_func(Handler h, const char *route, handle_func_t func) __attribute__((nonnull(2, 3)));
 void handler_default_handle(Handler h, handle_func_t func) __attribute__((nonnull(2)));
 
+void server_init(Server server, Handler handler, const char *port, size_t worker_thread);
 Server server_new(Handler handler, const char *port, size_t worker_threads);
 void server_cleanup(Server sv);
 void server_drop(Server *sv);
+
+int server_deb_dprint(int fd, Server server);
+int server_deb_print(Server server);
+
 int server_listen_and_serve(Server sv);
 
+void req_init(Request req, RequestMethod method, Slice url);
 Request req_new(RequestMethod method, Slice url);
 void req_cleanup(Request req);
 void req_drop(Request *req);
-Request req_from_client(int client_s);
 
 ResponseWriter rw_new(ResponseStatus status);
 void rw_status(ResponseWriter rw, int status);
 void rw_cleanup(ResponseWriter rw);
 void rw_drop(ResponseWriter *rw);
+
+int rw_deb_dprint(int fd, ResponseWriter rw);
+int rw_deb_print(ResponseWriter rw);
+
 void rw_write_header(ResponseWriter rw, const char *fmt, ...);
 void rw_set_body(ResponseWriter rw, const char *body) __attribute__ ((nonnull(2)));
 void rw_write_all(ResponseWriter rw, int fd);
 
+void handle_pack_init(HandlePack pack, Slice method, Slice url, handle_func_t func);
 HandlePack handle_pack_new(Slice method, Slice url, handle_func_t func);
 void handle_pack_cleanup(HandlePack pack);
+void handle_pack_drop(HandlePack *pack);
 
 #endif // SERVER_H

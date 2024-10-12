@@ -6,48 +6,37 @@
 #include <garage/alc.h>
 #include <garage/log.h>
 
-static inline AlcNode node_set(AlcNode node, AlcNode next, AlcNode prev, size_t len) {
-    return node->next = next, node->prev = prev, node->len = len, node;
-}
+#include "./.alc.c"
 
-static inline void *node_mem(AlcNode node) {
-    return node + 1;
-}
+static inline void __alc_init(Alc alc, size_t cap);
 
-static inline intptr_t node_gap(AlcNode node) {
-    return node->next? (intptr_t) ((void *)node->next - node_mem(node) - node->len): -1;
-}
-
-static inline int node_fit_len(AlcNode node, size_t len) {
-    return (!node->len && len < (size_t) node_gap(node))
-    || (node->len && sizeof *node + len < (size_t) node_gap(node));
-}
-
-static inline AlcNode node_next_fit(AlcNode node, size_t len) {
-    while (node->next && !node_fit_len(node, len)) node = node->next;
-    return node;
-}
-
-static inline AlcNode node_locate_ptr(AlcNode node, void *ptr) {
-    while (node->next && node_mem(node) != ptr) node = node->next;
-    return node;
+void alc_init(Alc alc, size_t cap) {
+    nul_check(Alc, alc);
+    __alc_init(alc, cap);
 }
 
 Alc alc_new(size_t cap) {
-    Alc alc = mmap(0, cap + sizeof *alc + sizeof *alc->begin, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#define alloc_size (cap + sizeof *alc + sizeof (struct alc_node))
+    Alc alc = mmap(0, alloc_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    alloc_check(mmap, alc, alloc_size);
     assert(alc != MAP_FAILED, "alc_new: null\n");
-    alc->cap = cap, alc->begin = (AlcNode) (alc + 1);
-    return memset(alc->begin, 0, sizeof *alc->begin), alc;
+    return __alc_init(alc, cap), alc;
+}
+#undef alloc_size
+
+void alc_cleanup(Alc alc) {
+    AlcNode begin = (void *)alc->mem;
+    memset(begin, 0, sizeof *begin);
 }
 
-int alc_cleanup(Alc alc) {
-    return munmap(alc, sizeof *alc + sizeof *alc->begin + alc->cap);
+void alc_drop(Alc *alc) {
+    if (alc && *alc) alc_cleanup(*alc), munmap(*alc, sizeof **alc + sizeof (struct alc_node) + (*alc)->cap), *alc = 0;
 }
 
 void *alc_alloc(Alc alc, size_t len) {
-    AlcNode node;
-    assert(alc, "alc_alloc: null\n");
-    if (!len || (node = node_next_fit(alc->begin, len), !node)) return 0;
+    nul_check(Alc, alc);
+    AlcNode begin = (void *)alc->mem, node;
+    if (!len || (node = node_next_fit(begin, len), !node)) return 0;
     if (!node->len && node_gap(node) >= 0) {
         node->len = len;
     } else {
@@ -57,9 +46,9 @@ void *alc_alloc(Alc alc, size_t len) {
 }
 
 int alc_free(Alc alc, void *ptr) {
-    AlcNode node;
-    assert(alc, "alc_free: null\n");
-    if (!ptr || (node = node_locate_ptr(alc->begin, ptr), !node)) return -1;
+    nul_check(Alc, alc);
+    AlcNode begin = (void *)alc->mem, node;
+    if (!ptr || (node = node_locate_ptr(begin, ptr), !node)) return -1;
     if (!node->prev) {
         if (!node->next->len) node->next = 0;
         node->len = 0;
@@ -67,4 +56,23 @@ int alc_free(Alc alc, void *ptr) {
         node->next->prev = node->prev, node->prev->next = !node->prev->len && !node->next->len? node->next->next: node->next;
     }
     return 0;
+}
+
+int alc_deb_dprint(int fd, Alc alc) {
+    if (!alc) return dprintf(fd, "(nil)");
+    size_t alloc_size = 0;
+    size_t node_count = 0;
+    for (AlcNode node = (void *)alc->mem; node; node = node->next) {
+        alloc_size += node->len, ++node_count;
+    }
+    return dprintf(fd, "{alloc_size: %lu, node_count: %zu, cap: %lu}", alloc_size, node_count, alc->cap);
+}
+
+int alc_deb_print(Alc alc) {
+    return fflush(stdout), alc_deb_dprint(1, alc);
+}
+
+static inline void __alc_init(Alc alc, size_t cap) {
+    AlcNode begin = (void *)alc->mem;
+    memset(begin, 0, sizeof *begin), alc->cap = cap;
 }

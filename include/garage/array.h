@@ -1,6 +1,7 @@
 #ifndef ARRAY_H
 #   define ARRAY_H 1
 
+#include <garage/garage.h>
 #include <stddef.h>
 
 struct vec;
@@ -9,18 +10,27 @@ struct slice;
 struct random_engine;
 
 typedef struct array {
-    void *mem;
-    size_t len, cap, align;
+    size_t cap;
+
+    Phantom slice;
+    void *_mem;
+    size_t _align, _len;
 } *Array;
 
 void arr_init(Array arr, size_t align);
 Array arr_new(size_t align);
-Array arr_copy(Array arr, Array oth);
 Array arr_move(Array arr, Array oth);
 Array arr_clone(Array arr);
 Array arr_from_slice(struct slice *slice);
 void arr_cleanup(Array arr);
 void arr_drop(Array *arr);
+
+int arr_deb_print(Array arr);
+int arr_deb_dprint(int fd, Array arr);
+
+int arr_hex_print(Array arr);
+int arr_hex_dprint(int fd, Array arr);
+
 void *arr_get(Array arr, size_t idx);
 int arr_reserve(Array arr, size_t cap);
 int arr_resize(Array arr, size_t len, const void *data);
@@ -37,12 +47,8 @@ void *arr_front(Array arr);
 void *arr_back(Array arr);
 void *arr_begin(Array arr);
 void *arr_end(Array arr);
-
-int arr_deb_print(Array arr);
-int arr_deb_dprint(int fd, Array arr);
-
-int arr_hex_print(Array arr);
-int arr_hex_dprint(int fd, Array arr);
+size_t arr_len(Array arr);
+size_t arr_cap(Array arr);
 
 __attribute__((nonnull(3)))
 int arr_parse(Array arr, struct slice *slice, int (*parse)(struct slice *elem, void *data));
@@ -54,6 +60,7 @@ void *arr_search_item(Array arr, const void *data);
 void *arr_search_mem(Array arr, const void *data, size_t len);
 void *arr_search_item_func(Array arr, int (*cmp)(const void *item));
 
+Array arr_from_slice(struct slice *slice);
 Array arr_from_vec(struct vec *vec);
 Array arr_from_deque(struct deque *dq);
 void arr_random(struct random_engine *re, Array/* Array */ arr, size_t align, size_t items);

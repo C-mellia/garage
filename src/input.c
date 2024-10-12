@@ -56,9 +56,10 @@ void tests_from_file(Slice file, Array /* Test */tests) {
 
     for (; !should_stop;) {
         InputTok Cleanup(input_tok_drop) input_tok = input_lexer_produce(input_lexer);
+        // input_tok_deb_print(input_tok), printf("\n");
         Slice input = (void *)test->input, res = (void *)test->res, slice = (void *)input_tok->slice;
 
-        if (errs->len) return;
+        if (errs->_len) return;
         switch(input_tok->type) {
             case INPUT_TOK_EOF: {
                 should_stop = 1;

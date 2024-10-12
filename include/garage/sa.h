@@ -16,6 +16,9 @@ Sa sa_new(size_t cap);
 void sa_cleanup(Sa sa);
 void sa_drop(Sa *sa);
 
+int sa_deb_dprint(int fd, Sa sa);
+int sa_deb_print(Sa sa);
+
 void *sa_alloc(Sa sa, size_t bytes);
 void sa_push(Sa sa);
 void sa_pop(Sa sa);

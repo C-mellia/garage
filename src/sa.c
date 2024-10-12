@@ -22,6 +22,29 @@ Sa sa_new(size_t cap) {
     return __sa_init(sa, cap), sa;
 }
 
+void sa_cleanup(Sa sa) {
+    if (!sa) return;
+    if (!sa_stack_empty(sa) && logfd > 0) {
+        log_fmt("Warning: The amount of times, in which push operations and pop operations are called respectively does not match together\n");
+    }
+}
+
+void sa_drop(Sa *sa) {
+    if (sa && *sa) sa_cleanup(*sa), munmap(*sa, sizeof **sa + (*sa)->cap), *sa = 0;
+}
+
+int sa_deb_dprint(int fd, Sa sa) {
+    if (!sa) return dprintf(fd, "(nil)");
+    void *bottom = sa->mem + sa->cap;
+    size_t alloc_size = bottom - sa->top;
+    return dprintf(fd, "{bottom: %p, alloc_size: %lu, stack_size: %zu, cap: %lu}\n",
+                   bottom, alloc_size, sa_stack_size(sa), sa->cap);
+}
+
+int sa_deb_print(Sa sa) {
+    return fflush(stdout), sa_deb_dprint(1, sa);
+}
+
 void *sa_alloc(Sa sa, size_t bytes) {
     nul_check(Sa, sa);
     if (sa_stack_empty(sa) && logfd > 0) {
@@ -46,17 +69,6 @@ void sa_push(Sa sa) {
 int sa_stack_empty(Sa sa) {
     nul_check(Sa, sa);
     return sa->off == sa->offs + MAX_OFFS;
-}
-
-void sa_cleanup(Sa sa) {
-    if (!sa) return;
-    if (!sa_stack_empty(sa) && logfd > 0) {
-        log_fmt("Warning: The amount of times, in which push operations and pop operations are called respectively does not match together\n");
-    }
-}
-
-void sa_drop(Sa *sa) {
-    if (sa && *sa) sa_cleanup(*sa), munmap(*sa, sizeof **sa + (*sa)->cap), *sa = 0;
 }
 
 void sa_diag(Sa sa) {

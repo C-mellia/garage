@@ -49,28 +49,36 @@ void string_from_anyint_hex(String string, const void *data, size_t align) {
 }
 
 void string_vfmt(String string, const char *fmt, va_list args) {
-    assert(string, "String is not initailized\n");
-    int fd = buffered_vprintf(fmt, args);
+    nul_check(String, string);
+    int Cleanup(fd_drop) fd = buffered_vprintf(fmt, args);
     string_from_file(fd, string);
-    close(fd);
 }
 
 void string_fmt(String string, const char *fmt, ...) {
     va_list args;
-    assert(string, "String is not initialized\n");
+    nul_check(String, string);
     va_start(args, fmt);
     string_vfmt(string, fmt, args);
     va_end(args);
 }
 
+int string_deb_dprint(int fd, String string) {
+    if (!string) return dprintf(fd, "(nil)");
+    return arr_deb_dprint(fd, (void *)string->arr);
+}
+
+int string_deb_print(String string) {
+    return fflush(stdout), string_deb_dprint(1, string);
+}
+
 int string_dprint(int fd, String string) {
-    assert(string, "String not initialized\n");
-    Array arr = (void *)string->arr;
-    return write(fd, arr->mem, arr->len * arr->align);
+    nul_check(String, string);
+    register Array arr = (void *)string->arr;
+    return write(fd, arr->_mem, arr->_len * arr->_align);
 }
 
 int string_print(String string) {
-    return string_dprint(1, string);
+    return fflush(stdout), string_dprint(1, string);
 }
 
 void string_from_file(int fd, String string) {
@@ -78,11 +86,10 @@ void string_from_file(int fd, String string) {
 }
 
 void string_fmt_func(String string, Dprint dprint, void *obj) {
-    assert(string, "String is not initialized\n");
-    int fd = object_dprint_redirect(obj, dprint);
+    nul_check(String, string);
+    int Cleanup(fd_drop) fd = object_dprint_redirect(obj, dprint);
     assert(fd != -1, "Failed to redirect dprint\n");
     string_from_file(fd, string);
-    close(fd);
 }
 
 static inline void __string_init(String string) {

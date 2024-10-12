@@ -41,6 +41,7 @@ static void *__slice_back(Slice slice) {
 static Slice __slice_split_at(Slice slice, void *pos) {
     Slice left = slice_new(__slice_begin(slice), slice->align, (pos - slice->mem) / slice->align);
     slice->mem = max_clamp(pos, __slice_end(slice));
+    slice->len -= left->len;
     return left;
 }
 

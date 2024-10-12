@@ -44,7 +44,7 @@ int res_deb_dprint(int fd, Result res) {
 }
 
 int res_deb_print(Result res) {
-    return res_deb_dprint(1, res);
+    return fflush(stdout), res_deb_dprint(1, res);
 }
 
 static inline void __res_init(Result res, int tag, void *src, size_t cap) {

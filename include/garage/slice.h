@@ -22,6 +22,7 @@ Slice arr_range_inc(struct array *arr, size_t front, size_t back);
 Slice slice_clone(Slice slice);
 void slice_cleanup(Slice slice);
 void slice_drop(Slice *slice);
+
 void *slice_get(Slice slice, size_t idx);
 void *slice_dup_mem(Slice slice);
 void *slice_dup_mem_zero_end(Slice slice);

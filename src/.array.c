@@ -1,8 +1,14 @@
 #ifndef _GARAGE_ARRAY_H
 #define _GARAGE_ARRAY_H 1
 
+#include "./.slice.c"
+
 static inline __attribute__((unused))
 size_t cap_inc(size_t cap);
+static inline __attribute__((unused))
+void __arr_init(Array arr, size_t align);
+static inline __attribute__((unused))
+void *__arr_get(Array arr, size_t idx);
 static inline __attribute__((unused))
 void arr_realloc(Array arr, size_t cap);
 static inline __attribute__((unused))
@@ -16,11 +22,20 @@ static size_t cap_inc(size_t cap) {
     return cap? cap * 2: 10;
 }
 
+static void __arr_init(Array arr, size_t align) {
+    memset(arr, 0, sizeof *arr), arr->_align = align;
+}
+
+static void *__arr_get(Array arr, size_t idx) {
+    Slice slice = (void *)arr->slice;
+    return __slice_get(slice, idx);
+}
+
 static void arr_realloc(Array arr, size_t cap) {
-    void *new_mem = malloc(cap * arr->align);
-    alloc_check(malloc, new_mem, cap * arr->align);
-    if (arr->mem) memcpy(new_mem, arr->mem, arr->len * arr->align), free(arr->mem);
-    arr->mem = new_mem, arr->cap = cap;
+    void *new_mem = malloc(cap * arr->_align);
+    alloc_check(malloc, new_mem, cap * arr->_align);
+    if (arr->_mem) memcpy(new_mem, arr->_mem, arr->_len * arr->_align), free(arr->_mem);
+    arr->_mem = new_mem, arr->cap = cap;
 }
 
 static int arr_check_cap(Array arr, size_t len) {

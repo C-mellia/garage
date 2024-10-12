@@ -22,6 +22,9 @@ void string_from_file(int fd, String string);
 void string_cleanup(String string);
 void string_drop(String *string);
 
+int string_deb_dprint(int fd, String string);
+int string_deb_print(String string);
+
 int string_dprint(int fd, String string);
 int string_print(String string);
 

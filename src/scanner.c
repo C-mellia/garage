@@ -24,7 +24,7 @@ Scanner scnr_new(void *mem, size_t align, size_t len) {
 void scnr_cleanup(Scanner scnr) {
     Array errs = (void *)scnr->errs;
     Slice slice = (void *)scnr->src;
-    for (size_t i = 0; i < errs->len; ++i) {
+    for (size_t i = 0; i < errs->_len; ++i) {
         string_drop(arr_get(errs, i));
     }
     arr_cleanup(errs), slice_cleanup(slice);

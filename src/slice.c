@@ -40,7 +40,7 @@ Slice slice_clone(Slice slice) {
 
 Slice slice_from_arr(Array arr) {
     if (!arr) return 0;
-    return slice_new(arr->mem, arr->align, arr->len);
+    return slice_new(arr->_mem, arr->_align, arr->_len);
 }
 
 void slice_cleanup(Slice slice) {
@@ -149,7 +149,7 @@ int slice_deb_dprint(int fd, Slice slice) {
 }
 
 int slice_deb_print(Slice slice) {
-    return slice_deb_dprint(1, slice);
+    return fflush(stdout), slice_deb_dprint(1, slice);
 }
 
 void *slice_search_item(Slice slice, const void *data) {
@@ -208,10 +208,10 @@ int slice_hex_print(Slice slice) {
 
 Slice arr_range(Array arr, size_t begin, size_t end) {
     if (!arr) return 0;
-    return slice_new(arr->mem + begin * arr->align, arr->align, end - begin);
+    return slice_new(__slice_get((void *)arr->slice, begin), arr->_align, end - begin);
 }
 
 Slice arr_range_inc(Array arr, size_t front, size_t back) {
     if (!arr) return 0;
-    return slice_new(arr->mem + front * arr->align, arr->align, back - front + 1);
+    return slice_new(__slice_get((void *)arr->slice, front), arr->_align, back - front + 1);
 }

@@ -1,6 +1,8 @@
 #ifndef _GARAGE_SEARCH_H
 #define _GARAGE_SEARCH_H 1
 
+#include <regex.h>
+
 static __attribute__((unused))
 void *mem_search_item(void *begin, void *end, const void *data, size_t align);
 static __attribute__((unused))
