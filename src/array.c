@@ -33,24 +33,24 @@ Array arr_new(size_t align) {
 Array arr_move(Array arr, Array oth) {
     nul_check(Array, arr), nul_check(Array, oth);
     arr_cleanup(arr);
-    void *slice = arr->slice;
-    __slice_init(slice, oth->_mem, oth->_align, oth->_len), arr->cap = oth->cap;
+    Slice slice = (void *)arr->slice;
+    __slice_init(slice, oth->slice_mem, oth->slice_align, oth->slice_len), arr->len = oth->len;
     memset(oth, 0, sizeof *oth);
     return arr;
 }
 
 Array arr_clone(Array arr) {
     if (!arr) return 0;
-    Array new_arr = arr_new(arr->_align);
-    if (!arr_check_cap(new_arr, arr->_len)) memcpy(new_arr->_mem, arr->_mem, arr->_len * arr->_align);
-    new_arr->_len = arr->_len;
+    Array new_arr = arr_new(arr->slice_align);
+    if (!arr_check_cap(new_arr, arr->len)) memcpy(new_arr->slice_mem, arr->slice_mem, arr->len * arr->slice_align);
+    new_arr->len = arr->len;
     return new_arr;
 }
 
 void arr_cleanup(Array arr) {
     if (!arr) return;
-    if (arr->_mem) free(arr->_mem);
-    arr->_mem = 0, arr->_len = arr->cap = 0;
+    if (arr->slice_mem) free(arr->slice_mem);
+    arr->slice_mem = 0, arr->len = arr->slice_len = 0;
 }
 
 void arr_drop(Array *arr) {
@@ -60,7 +60,7 @@ void arr_drop(Array *arr) {
 int arr_deb_dprint(int fd, Array arr) {
     if (!arr) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
-    string_fmt(string, "{cap: %lu, ", arr->cap);
+    string_fmt(string, "{len: %lu, ", arr->len);
     string_fmt_func(string, (void *)slice_deb_dprint, (void *)arr->slice);
     string_fmt(string, "}");
     return string_dprint(fd, string);
@@ -74,10 +74,10 @@ int arr_hex_dprint(int fd, Array arr) {
     if (!arr) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
     string_fmt(string, "[");
-    for (size_t i = 0; i < arr->_len; ++i) {
+    for (size_t i = 0; i < arr->len; ++i) {
         string_fmt(string, "0x");
-        string_from_anyint_hex(string, __arr_get(arr, i), arr->_align);
-        if (i + 1 < arr->_len) string_fmt(string, ", ");
+        string_from_anyint_hex(string, __arr_get(arr, i), arr->slice_align);
+        if (i + 1 < arr->len) string_fmt(string, ", ");
     }
     string_fmt(string, "]");
     return string_dprint(fd, string);
@@ -89,7 +89,7 @@ int arr_hex_print(Array arr) {
 
 void *arr_get(Array arr, size_t idx) {
     nul_check(Array, arr);
-    return idx < arr->_len? __slice_get((void *)arr->slice, idx): 0;
+    return idx < arr->len? __arr_get(arr, idx): 0;
 }
 
 int arr_reserve(Array arr, size_t cap) {
@@ -102,111 +102,116 @@ int arr_reserve(Array arr, size_t cap) {
 int arr_resize(Array arr, size_t len, const void *data) {
     nul_check(Array, arr);
     int res = arr_check_cap(arr, len);
-    void *slice = arr->slice;
-    if (data && len > arr->_len) {
-        for (size_t i = arr->_len; i < len; ++i) {
-            memcpy(__slice_get(slice, i), data, arr->_align);
+    if (data && len > arr->len) {
+        for (size_t i = arr->len; i < len; ++i) {
+            memcpy(__arr_get(arr, i), data, arr->slice_align);
         }
     }
-    arr->_len = len;
+    arr->len = len;
     return res;
 }
 
 int arr_reinterp(Array arr, size_t align) {
     nul_check(Array, arr);
-    if (!align || arr->_align == align) return -1;
-    arr->_len = (arr->_len * arr->_align + align - 1) / align, arr->_align = align;
+    Slice slice = (void *)arr->slice;
+    if (!align || slice->align == align) return -1;
+    slice->len = (slice->len * slice->align + align - 1) / align, slice->align = align;
     return 0;
 }
 
 void *arr_dup_mem(Array arr) {
     nul_check(Array, arr);
-    return mem_dup(arr->_mem, arr->_align, arr->_len);
+    Slice slice = (void *)arr->slice;
+    return mem_dup(slice->mem, slice->align, arr->len);
 }
 
 void *arr_dup_mem_zero_end(Array arr) {
     nul_check(Array, arr);
-    return mem_dup_zero_end(arr->_mem, arr->_align, arr->_len);
+    Slice slice = (void *)arr->slice;
+    return mem_dup_zero_end(slice->mem, slice->align, arr->len);
 }
 
 void *arr_push_back(Array arr, const void *data) {
     nul_check(Array, arr);
-    arr_check_cap(arr, arr->_len + 1);
+    Slice slice = (void *)arr->slice;
+    arr_check_cap(arr, slice->len + 1);
     if (data) {
-        return memcpy(__arr_get(arr, arr->_len++), data, arr->_align);
+        return memcpy(__arr_get(arr, arr->len++), data, slice->align);
     } else {
-        return memset(__arr_get(arr, arr->_len++), 0, arr->_align);
+        return memset(__arr_get(arr, arr->len++), 0, slice->align);
     }
 }
 
 void *arr_push_front(Array arr, const void *data) {
     nul_check(Array, arr);
-    arr_check_cap(arr, arr->_len + 1);
-    memmove(arr->_mem + arr->_align, arr->_mem, arr->_len++ * arr->_align);
+    Slice slice = (void *)arr->slice;
+    arr_check_cap(arr, arr->len + 1);
+    memmove(slice->mem + slice->align, slice->mem, arr->len++ * slice->align);
     if (data) {
-        return memcpy(arr->_mem, data, arr->_align);
+        return memcpy(slice->mem, data, slice->align);
     } else {
-        return memset(arr->_mem, 0, arr->_align);
+        return memset(slice->mem, 0, slice->align);
     }
 }
 
 void *arr_pop_back(Array arr) {
     nul_check(Array, arr);
-    if (!arr->_len) return 0;
-    return __slice_get((void *)arr->slice, --arr->_len);
+    if (!arr->len) return 0;
+    return __arr_get(arr, --arr->len);
 }
 
 void *arr_pop_front(Array arr) {
     nul_check(Array, arr);
-    if (!arr->_len) return 0;
-    uint8_t buf[arr->_align];
-    void *slice = arr->slice;
-    memcpy(buf, arr->_mem, sizeof buf);
-    memmove(arr->_mem, arr->_mem + arr->_align, --arr->_len * arr->_align);
-    return memcpy(__slice_get(slice, arr->_len), buf, sizeof buf);
+    Slice slice = (void *)arr->slice;
+    if (!arr->len) return 0;
+    uint8_t buf[slice->align];
+    memcpy(buf, slice->mem, sizeof buf);
+    memmove(slice->mem, slice->mem + slice->align, --arr->len * slice->align);
+    return memcpy(__slice_get(slice, arr->len), buf, sizeof buf);
 }
 
 void *arr_front(Array arr) {
     nul_check(Array, arr);
-    return arr->_len? __arr_get(arr, 0): 0;
+    return arr->len? __arr_get(arr, 0): 0;
 }
 
 void *arr_back(Array arr) {
     nul_check(Array, arr);
-    return arr->_len? __arr_get(arr, arr->_len - 1): 0;
+    return arr->len? __arr_get(arr, arr->len - 1): 0;
 }
 
 void *arr_begin(Array arr) {
     nul_check(Array, arr);
-    return arr->_mem;
+    return arr->slice_mem;
 }
 
 void *arr_end(Array arr) {
     nul_check(Array, arr);
-    return __slice_get((void *)arr->slice, arr->_len);
+    return __arr_get(arr, arr->len);
 }
 
 size_t arr_len(Array arr) {
     nul_check(Array, arr);
-    return arr->_len;
+    return arr->len;
 }
 
 size_t arr_cap(Array arr) {
     nul_check(Array, arr);
-    return arr->cap;
+    return arr->slice_len;
 }
 
-int arr_parse(Array arr, Slice __slice, int (*parse)(Slice elem, void *data)) {
+int arr_parse(Array arr, Slice __in, int (*parse)(Slice elem, void *data)) {
     nul_check(Array, arr);
-    if (!__slice || !__slice->len) return -1;
-    assert(__slice->align == 1, "Expected an alignment of 1, got %zu\n", __slice->align);
-    Slice Cleanup(slice_drop) slice = slice_clone(__slice);
-    char front = deref(char, slice_front(slice)), back = deref(char, slice_back(slice));
+    if (!__in || !__in->len) return -1;
+    assert(__in->align == 1, "Expected an alignment of 1, got %zu\n", __in->align);
+    Slice slice = (void *)arr->slice;
+    Slice Cleanup(slice_drop) in = slice_clone(__in);
+    char front = deref(char, slice_front(in)), back = deref(char, slice_back(in));
     if (front != '[' || back != ']') return -1;
-    slice->len -= 2, ++slice->mem;
-    void *data = alloca(arr->_align);
-    while (slice->len) {
-        Slice Cleanup(slice_drop) elem = slice_split_once(slice, ",", 1);
+    in->len -= 2, ++in->mem;
+    void *data = alloca(slice->align);
+    while (in->len) {
+        Slice Cleanup(slice_drop) elem = slice_split_once(in, ",", 1);
         slice_trim(elem, " ", 1);
         if (parse(elem, data)) return -1;
         arr_push_back(arr, data);
@@ -216,40 +221,40 @@ int arr_parse(Array arr, Slice __slice, int (*parse)(Slice elem, void *data)) {
 
 void *arr_remove(Array arr, size_t idx) {
     nul_check(Array, arr);
-    if (idx >= arr->_len) return 0;
-    uint8_t buf[arr->_align];
-    void *slice = arr->slice;
+    Slice slice = (void *)arr->slice;
+    if (idx >= arr->len) return 0;
+    uint8_t buf[slice->align];
     memcpy(buf, __slice_get(slice, idx), sizeof buf);
     memmove(__slice_get(slice, idx),
             __slice_get(slice, idx + 1),
-            idx + 1 == arr->_len? 0: (arr->_len - idx - 2) * arr->_align);
-    return memcpy(__slice_get(slice, --arr->_len), buf, sizeof buf);
+            idx + 1 == arr->len? 0: (arr->len - idx - 2) * slice->align);
+    return memcpy(__slice_get(slice, --arr->len), buf, sizeof buf);
 }
 
 void *arr_insert(Array arr, size_t idx, const void *data) {
     nul_check(Array, arr);
-    if (idx > arr->_len) return 0;
     Slice slice = (void *)arr->slice;
-    arr_check_cap(arr, arr->_len + 1);
+    if (idx > arr->len) return 0;
+    arr_check_cap(arr, arr->len + 1);
     memmove(__slice_get(slice, idx + 1),
             __slice_get(slice, idx),
-            (arr->_len++ - idx) * arr->_align);
-    return memcpy(__slice_get(slice, idx), data, arr->_align);
+            (arr->len++ - idx) * slice->align);
+    return memcpy(__slice_get(slice, idx), data, slice->align);
 }
 
 void *arr_search_item(Array arr, const void *data) {
     nul_check(Array, arr);
-    return data? mem_search_item(arr->_mem, arr->_mem + arr->_len * arr->_align, data, arr->_align): 0;
+    return data? mem_search_item(arr->slice_mem, __arr_get(arr, arr->len), data, arr->slice_align): 0;
 }
 
 void *arr_search_mem(Array arr, const void *data, size_t len) {
     nul_check(Array, arr);
-    return data? mem_search_mem(arr->_mem, arr->_mem + arr->_len * arr->_align, data, len, arr->_align): 0;
+    return data? mem_search_mem(arr->slice_mem, __arr_get(arr, arr->len), data, len, arr->slice_align): 0;
 }
 
 void *arr_search_item_func(Array arr, int (*cmp)(const void *item)) {
     nul_check(Array, arr);
-    return cmp? mem_search_item_func(arr->_mem, arr->_mem + arr->_len * arr->_align, cmp, arr->_align): 0;
+    return cmp? mem_search_item_func(arr->slice_mem, __arr_get(arr, arr->len), cmp, arr->slice_align): 0;
 }
 
 void arr_random(RandomEngine re, Array/* Array */ arr, size_t align, size_t items) {

@@ -38,11 +38,11 @@ static inline void *bottom_clamp(void *begin, void *ptr, size_t len) {
 static inline void *deq_wrap_memcpy_to(void *new_mem, Deque deq, size_t idx, size_t len) {
     Slice slice = (void *)deq->slice;
     void *begin = __deq_get(deq, idx);
-    len *= deq->_align;
-    intptr_t wrapped = (begin + len) - __slice_get(slice, deq->_cap);
+    len *= slice->align;
+    intptr_t wrapped = (begin + len) - __slice_get(slice, slice->len);
     if (wrapped > 0) {
         memcpy(new_mem, begin, len - wrapped);
-        memcpy(new_mem + len - wrapped, deq->_mem, wrapped);
+        memcpy(new_mem + len - wrapped, slice->mem, wrapped);
     } else {
         memcpy(new_mem, begin, len);
     }
@@ -52,11 +52,11 @@ static inline void *deq_wrap_memcpy_to(void *new_mem, Deque deq, size_t idx, siz
 static inline void *deq_wrap_memcpy_from(Deque deq, void *mem, size_t idx, size_t len) {
     Slice slice = (void *)deq->slice;
     void *begin = __deq_get(deq, idx);
-    len *= deq->_align;
-    intptr_t wrapped = (begin + len) - __slice_get(slice, deq->_cap);
+    len *= slice->align;
+    intptr_t wrapped = (begin + len) - __slice_get(slice, slice->len);
     if (wrapped > 0) {
         memcpy(begin, mem, len - wrapped);
-        memcpy(deq->_mem, mem + len - wrapped, wrapped);
+        memcpy(slice->mem, mem + len - wrapped, wrapped);
     } else {
         memcpy(begin, mem, len);
     }
@@ -70,30 +70,33 @@ static void *deq_wrap_memmove(Deque deq, size_t dst, size_t idx, size_t len) {
 }
 
 static void deq_realloc(Deque deq, size_t cap) {
-    void *new_mem = malloc(deq->_align * cap);
-    alloc_check(malloc, new_mem, deq->_align * cap);
-    if (deq->_mem) {
+    Slice slice = (void *)deq->slice;
+    void *new_mem = malloc(slice->align * cap);
+    alloc_check(malloc, new_mem, slice->align * cap);
+    if (slice->mem) {
         deq_wrap_memcpy_to(new_mem, deq, 0, deq->len);
-        free(deq->_mem);
+        free(slice->mem);
     }
-    deq->_cap = cap, deq->_mem = new_mem, deq->begin = 0;
+    slice->len = cap, slice->mem = new_mem, deq->begin = 0;
 }
 
 // slightly different than array's check cap
 static int deq_check_cap(Deque deq, size_t len) {
-    size_t cap = deq->_cap;
+    Slice slice = (void *)deq->slice;
+    size_t cap = slice->len;
     while (cap < len) cap = cap? cap * 2: 10;
-    if (cap != deq->_cap) return deq_realloc(deq, cap), 0;
+    if (cap != slice->len) return deq_realloc(deq, cap), 0;
     return -1;
 }
 
 static void *__deq_get(Deque deq, size_t idx) {
     Slice slice = (void *)deq->slice;
-    return top_clamp(__slice_get(slice, deq->_cap), __slice_get(slice, deq->begin + idx), deq->_cap * deq->_align);
+    return top_clamp(__slice_get(slice, slice->len), __slice_get(slice, deq->begin + idx), slice->len * slice->align);
 }
 
 static void __deq_init(Deque deq, size_t align) {
-    memset(deq, 0, sizeof *deq), deq->_align = align;
+    Slice slice = (void *)deq->slice;
+    memset(deq, 0, sizeof *deq), slice->align = align;
 }
 
 #endif // _GARAGE_DEQUE_H

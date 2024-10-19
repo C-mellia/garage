@@ -39,7 +39,7 @@ Handler handler_new() {
 
 void handler_cleanup(Handler handler) {
     if (!handler) return;
-    for (size_t i = 0; i < handler->packs->_len; ++i) {
+    for (size_t i = 0; i < arr_len(handler->packs); ++i) {
         handle_pack_drop(arr_get(handler->packs, i));
     }
     arr_drop(&handler->packs);
@@ -165,7 +165,7 @@ ResponseWriter rw_new(ResponseStatus status) {
 
 void rw_cleanup(ResponseWriter rw) {
     if (!rw) return;
-    for (size_t i = 0; i < rw->headers->_len; ++i) {
+    for (size_t i = 0; i < arr_len(rw->headers); ++i) {
         String Cleanup(string_drop) header = deref(String, arr_get(rw->headers, i));
     }
     arr_drop(&rw->headers), string_drop(&rw->body);
@@ -209,7 +209,7 @@ void rw_write_all(ResponseWriter rw, int fd) {
     nul_check(ResponseWriter, rw);
     dprintf(fd, "HTTP/1.0 %d %.*s\r\n",
             rw->status, (int)res_str[rw->status].len, (char *)res_str[rw->status].mem);
-    for (size_t i = 0; i < rw->headers->_len; ++i) {
+    for (size_t i = 0; i < arr_len(rw->headers); ++i) {
         String header = deref(String, arr_get(rw->headers, i));
         string_dprint(fd, header);
         dprintf(fd, "\r\n");

@@ -17,11 +17,13 @@ static void __string_from_file(int fd, String string, size_t buf_len) {
     __label__ L0;
     char buf[buf_len] = {};
     Array arr = (void *)string->arr;
+    printf("%zu, %p, %zu, %zu\n", arr->len, arr->slice_mem, arr->slice_align, arr->slice_len);
 L0:
-    size_t prev_len = arr->_len;
+    size_t prev_len = arr->len;
     int cnt = read(fd, buf, buf_len);
+    printf("%d\n", cnt);
     assert(cnt != -1, "%s:%d:%s: failed to read file", __FILE__, __LINE__, __func__);
-    arr_resize(arr, arr->_len + cnt, 0), memcpy(arr_get(arr, prev_len), buf, cnt);
+    arr_resize(arr, arr->len + cnt, 0), memcpy(arr_get(arr, prev_len), buf, cnt);
     if (cnt == (int)buf_len) goto L0;
 }
 

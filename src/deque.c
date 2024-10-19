@@ -23,8 +23,9 @@ Deque deq_new(size_t align) {
 
 void deq_cleanup(Deque deq) {
     if (!deq) return;
-    if (deq->_mem) free(deq->_mem);
-    deq->_mem = 0, deq->begin = deq->len = deq->_cap = 0;
+    Slice slice = (void *)deq->slice;
+    if (slice->mem) free(slice->mem);
+    slice->mem = 0, deq->begin = deq->len = slice->len = 0;
 }
 
 void deq_drop(Deque *deq) {
@@ -33,11 +34,12 @@ void deq_drop(Deque *deq) {
 
 void *deq_push_back(Deque deq, void *mem) {
     nul_check(Deque, deq);
+    Slice slice = (void *)deq->slice;
     deq_check_cap(deq, deq->len + 1);
     if (mem) {
-        return memcpy(__deq_get(deq, deq->len++), mem, deq->_align);
+        return memcpy(__deq_get(deq, deq->len++), mem, slice->align);
     } else {
-        return memset(__deq_get(deq, deq->len++), 0, deq->_align);
+        return memset(__deq_get(deq, deq->len++), 0, slice->align);
     }
 }
 
@@ -45,11 +47,11 @@ void *deq_push_front(Deque deq, void *mem) {
     nul_check(Deque, deq);
     Slice slice = (void *)deq->slice;
     deq_check_cap(deq, ++deq->len);
-    deq->begin = deq->begin? deq->begin - 1: deq->_cap - 1;
+    deq->begin = deq->begin? deq->begin - 1: slice->len - 1;
     if (mem) {
-        return memcpy(__slice_get(slice, deq->begin), mem, deq->_align);
+        return memcpy(__slice_get(slice, deq->begin), mem, slice->align);
     } else {
-        return memset(__slice_get(slice, deq->begin), 0, deq->_align);
+        return memset(__slice_get(slice, deq->begin), 0, slice->align);
     }
 }
 
@@ -64,7 +66,7 @@ void *deq_pop_front(Deque deq) {
     Slice slice = (void *)deq->slice;
     if (!deq->len) return 0;
     void *begin = __slice_get(slice, deq->begin);
-    deq->begin = deq->begin + 1 < deq->_cap? deq->begin + 1: 0;
+    deq->begin = deq->begin + 1 < slice->len? deq->begin + 1: 0;
     return --deq->len, begin;
 }
 
@@ -84,10 +86,11 @@ int deq_deb_print(Deque deq) {
 int deq_hex_dprint(int fd, Deque deq) {
     if (!deq) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
+    Slice slice = (void *)deq->slice;
     string_fmt(string, "[");
     for (size_t i = 0; i < deq->len; ++i) {
         string_fmt(string, "0x");
-        string_from_anyint_hex(string, __deq_get(deq, i), deq->_align);
+        string_from_anyint_hex(string, __deq_get(deq, i), slice->align);
         if (i + 1 < deq->len) string_fmt(string, ", ");
     }
     string_fmt(string, "]");
@@ -101,9 +104,10 @@ int deq_hex_print(Deque deq) {
 int deq_idx_dprint(int fd, Deque deq) {
     if (!deq) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
+    Slice slice = (void *)deq->slice;
     string_fmt(string, "[");
     for (size_t i = 0; i < deq->len; ++i) {
-        size_t off = (__deq_get(deq, i) - deq->_mem) / deq->_align;
+        size_t off = (__deq_get(deq, i) - slice->mem) / slice->align;
         string_fmt(string, "+0x%lx", off);
         if (i + 1 < deq->len) string_fmt(string, ", ");
     }
@@ -117,8 +121,9 @@ int deq_idx_print(Deque deq) {
 
 void *deq_remove(Deque deq, size_t idx) {
     nul_check(Deque, deq);
+    Slice slice = (void *)deq->slice;
     if (idx >= deq->len) return 0;
-    uint8_t buf[deq->_align];
+    uint8_t buf[slice->align];
     memcpy(buf, __deq_get(deq, idx), sizeof buf);
     deq_wrap_memmove(deq, idx, idx + 1, deq->len - idx - 1);
     return memcpy(__deq_get(deq, deq->len--), buf, sizeof buf); // end of queue
@@ -127,12 +132,13 @@ void *deq_remove(Deque deq, size_t idx) {
 void *deq_insert(Deque deq, size_t idx, void *mem) {
     nul_check(Deque, deq);
     if (idx > deq->len) return 0;
+    Slice slice = (void *)deq->slice;
     deq_check_cap(deq, deq->len + 1);
     deq_wrap_memmove(deq, idx + 1, idx, deq->len++ - idx);
     if (mem) {
-        return memcpy(__deq_get(deq, idx), mem, deq->_align);
+        return memcpy(__deq_get(deq, idx), mem, slice->align);
     } else {
-        return memset(__deq_get(deq, idx), 0, deq->_align);
+        return memset(__deq_get(deq, idx), 0, slice->align);
     }
 }
 

@@ -11,8 +11,8 @@ typedef struct deque {
     size_t begin, len;
 
     Phantom slice;
-    void *_mem;
-    size_t _align, _cap;
+    void *slice_mem;
+    size_t slice_align, slice_len;
 } *Deque;
 
 void deq_init(Deque deq, size_t align);

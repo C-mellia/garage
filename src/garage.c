@@ -107,11 +107,13 @@ void cleanup(void) {
     free(garage);
 }
 
-void log_fmt(const char *msg, ...) {
+int log_fmt(const char *msg, ...) {
     va_list args;
+    int res;
     va_start(args, msg);
-    if (logfd >= 0) vdprintf(logfd, msg, args);
+    if (logfd >= 0) res = vdprintf(logfd, msg, args);
     va_end(args);
+    return res;
 }
 
 void _abort(void) {

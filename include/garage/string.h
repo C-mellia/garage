@@ -8,9 +8,11 @@
 
 typedef struct string {
     Phantom arr;
+    size_t arr_cap;
 
-    void *_mem;
-    size_t _len, _cap, _align;
+    Phantom arr_slice;
+    void *_arr_slice_mem;
+    size_t _arr_slice_align, _arr_slice_len;
 } *String;
 
 // most of the function push additional item to the back of array

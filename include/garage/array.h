@@ -10,11 +10,11 @@ struct slice;
 struct random_engine;
 
 typedef struct array {
-    size_t cap;
+    size_t len;
 
     Phantom slice;
-    void *_mem;
-    size_t _align, _len;
+    void *slice_mem;
+    size_t slice_align, slice_len;
 } *Array;
 
 void arr_init(Array arr, size_t align);

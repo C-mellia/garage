@@ -74,7 +74,7 @@ int string_deb_print(String string) {
 int string_dprint(int fd, String string) {
     nul_check(String, string);
     register Array arr = (void *)string->arr;
-    return write(fd, arr->_mem, arr->_len * arr->_align);
+    return write(fd, arr->slice_mem, arr->len * arr->slice_align);
 }
 
 int string_print(String string) {

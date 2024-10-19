@@ -59,7 +59,7 @@ void tests_from_file(Slice file, Array /* Test */tests) {
         // input_tok_deb_print(input_tok), printf("\n");
         Slice input = (void *)test->input, res = (void *)test->res, slice = (void *)input_tok->slice;
 
-        if (errs->_len) return;
+        if (arr_len(errs)) return;
         switch(input_tok->type) {
             case INPUT_TOK_EOF: {
                 should_stop = 1;

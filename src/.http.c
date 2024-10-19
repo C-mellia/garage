@@ -101,7 +101,7 @@ static void *worker(void *args) {
         if (!req) continue;
 
         ResponseWriter Cleanup(rw_drop) rw = rw_new(RESPONSE_OK);
-        for (size_t i = 0; i < packs->_len; ++i) {
+        for (size_t i = 0; i < arr_len(packs); ++i) {
             HandlePack pack = deref(HandlePack, arr_get(packs, i));
             RequestMethod method = pack->method;
             register regex_t *regex = &pack->url_reg;
