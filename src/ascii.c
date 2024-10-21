@@ -108,7 +108,12 @@ int ch_deb_dprint(int fd, char *ch) {
     CharType type = ch_type(ch);
     const char *str = (uint8_t)*ch < 128? ch_str[(uint8_t)*ch]: "Undefined Char";
     switch(type) {
-        case CH_NONE ... CH_ALPHA: {
+        case CH_CTL ... CH_WS: {
+            return dprintf(fd, "{type: '%s', code: '%s'}",
+                           get_type_str, str);
+        } break;
+        case CH_NONE:
+        case CH_PUN ... CH_ALPHA: {
             return dprintf(fd, "{type: '%s', ch: '%s'}",
                            get_type_str, str);
         } break;
