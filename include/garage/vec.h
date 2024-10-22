@@ -16,6 +16,8 @@ Vec vec_new(size_t align, size_t cap);
 Vec vec_zero(size_t align, size_t cap);
 Vec vec_clone(Vec vec);
 void vec_cleanup(Vec vec);
+void *vec_drop(Vec *vec);
+
 void *vec_get(Vec vec, size_t idx);
 void vec_reinterp(Vec vec, size_t align);
 

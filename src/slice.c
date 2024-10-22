@@ -44,8 +44,9 @@ void slice_cleanup(Slice slice) {
     // slice->mem = 0, slice->len = 0;
 }
 
-void slice_drop(Slice *slice) {
-    if (slice && *slice) slice_cleanup(*slice), free(*slice), *slice = 0;
+void *slice_drop(Slice *slice) {
+    if (slice) slice_cleanup(*slice), free(*slice), *slice = 0;
+    return slice;
 }
 
 void *slice_get(Slice slice, size_t idx) {
@@ -138,7 +139,7 @@ Slice slice_split_once_mem(Slice slice, void *mem, size_t len) {
 }
 
 int slice_deb_dprint(int fd, Slice slice) {
-    if (!slice || !slice->mem) return dprintf(fd, "(nil)");
+    if (!slice) return dprintf(fd, "(nil)");
     return dprintf(fd, "{mem: %p, align: %zu, len: %zu}",
                    slice->mem, slice->align, slice->len);
 }

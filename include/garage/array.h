@@ -23,7 +23,7 @@ Array arr_move(Array arr, Array oth);
 Array arr_clone(Array arr);
 Array arr_from_slice(struct slice *slice);
 void arr_cleanup(Array arr);
-void arr_drop(Array *arr);
+void *arr_drop(Array *arr);
 
 int arr_deb_print(Array arr);
 int arr_deb_dprint(int fd, Array arr);

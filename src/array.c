@@ -53,8 +53,9 @@ void arr_cleanup(Array arr) {
     arr->slice_mem = 0, arr->len = arr->slice_len = 0;
 }
 
-void arr_drop(Array *arr) {
-    if (arr && *arr) arr_cleanup(*arr), free(*arr), *arr = 0;
+void *arr_drop(Array *arr) {
+    if (arr) arr_cleanup(*arr), free(*arr), *arr = 0;
+    return arr;
 }
 
 int arr_deb_dprint(int fd, Array arr) {
@@ -133,12 +134,11 @@ void *arr_dup_mem_zero_end(Array arr) {
 
 void *arr_push_back(Array arr, const void *data) {
     nul_check(Array, arr);
-    Slice slice = (void *)arr->slice;
-    arr_check_cap(arr, slice->len + 1);
+    arr_check_cap(arr, arr->len + 1);
     if (data) {
-        return memcpy(__arr_get(arr, arr->len++), data, slice->align);
+        return memcpy(__arr_get(arr, arr->len++), data, arr->slice_align);
     } else {
-        return memset(__arr_get(arr, arr->len++), 0, slice->align);
+        return memset(__arr_get(arr, arr->len++), 0, arr->slice_align);
     }
 }
 
@@ -261,9 +261,12 @@ void arr_random(RandomEngine re, Array/* Array */ arr, size_t align, size_t item
     nul_check(RandomEngine, re), nul_check(Array, arr);
     Array subarr = arr_new(align);
     uint8_t item[align * items];
-    if (read(re->fd, item, sizeof *item) < (ssize_t)items) return arr_drop(&subarr);
-    for (size_t i = 0; i < items; ++i) {
-        arr_push_back(subarr, item + align * i);
+    if (read(re->fd, item, sizeof *item) < (ssize_t)items) {
+        arr_drop(&subarr);
+    } else {
+        for (size_t i = 0; i < items; ++i) {
+            arr_push_back(subarr, item + align * i);
+        }
+        arr_push_back(arr, &subarr);
     }
-    arr_push_back(arr, &subarr);
 }

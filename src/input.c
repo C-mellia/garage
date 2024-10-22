@@ -27,8 +27,9 @@ void test_cleanup(Test test) {
     slice_cleanup(input), slice_cleanup(res);
 }
 
-void test_drop(Test *test) {
-    if (test && *test) test_cleanup(*test), free(*test), *test = 0;
+void *test_drop(Test *test) {
+    if (test) test_cleanup(*test), free(*test), *test = 0;
+    return test;
 }
 
 int test_deb_dprint(int fd, Test test) {

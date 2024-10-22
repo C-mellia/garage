@@ -26,8 +26,9 @@ void res_cleanup(Result res) {
     (void) res;
 }
 
-void res_drop(Result *res) {
-    if (res && *res) res_cleanup(*res), free(*res), *res = 0;
+void *res_drop(Result *res) {
+    if (res) res_cleanup(*res), free(*res), *res = 0;
+    return res;
 }
 
 void *res_consume(Result res) {

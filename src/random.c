@@ -53,8 +53,9 @@ uint64_t re_get_u64(RandomEngine re) {
     return read(re->fd, buf, 4) < 4? 0: *(uint64_t *) buf;
 }
 
-void re_drop(RandomEngine *re) {
-    if (re && *re) re_cleanup(*re), *re = 0;
+void *re_drop(RandomEngine *re) {
+    if (re) re_cleanup(*re), *re = 0;
+    return re;
 }
 
 static void __re_init(RandomEngine re) {

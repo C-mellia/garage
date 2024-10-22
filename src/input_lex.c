@@ -26,8 +26,9 @@ void input_lexer_cleanup(InputLexer input_lexer) {
     scnr_cleanup(scnr);
 }
 
-void input_lexer_drop(InputLexer *input_lexer) {
-    if (input_lexer && *input_lexer) input_lexer_cleanup(*input_lexer), free(*input_lexer), *input_lexer = 0;
+void *input_lexer_drop(InputLexer *input_lexer) {
+    if (input_lexer) input_lexer_cleanup(*input_lexer), free(*input_lexer), *input_lexer = 0;
+    return input_lexer;
 }
 
 int input_lexer_deb_dprint(int fd, InputLexer input_lexer) {

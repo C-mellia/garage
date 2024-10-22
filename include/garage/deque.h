@@ -18,7 +18,7 @@ typedef struct deque {
 void deq_init(Deque deq, size_t align);
 Deque deq_new(size_t align);
 void deq_cleanup(Deque deq);
-void deq_drop(Deque *deq);
+void *deq_drop(Deque *deq);
 
 int deq_deb_dprint(int fd, Deque deq);
 int deq_deb_print(Deque deq);

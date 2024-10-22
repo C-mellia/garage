@@ -37,8 +37,9 @@ void vec_cleanup(Vec vec) {
     (void) vec;
 }
 
-void vec_drop(Vec *vec) {
-    if (vec && *vec) vec_cleanup(*vec), free(*vec), *vec = 0;
+void *vec_drop(Vec *vec) {
+    if (vec) vec_cleanup(*vec), free(*vec), *vec = 0;
+    return vec;
 }
 
 void *vec_get(Vec vec, size_t idx) {

@@ -24,8 +24,9 @@ void input_tok_cleanup(InputTok input_tok) {
     (void) input_tok;
 }
 
-void input_tok_drop(InputTok *input_tok) {
-    if (input_tok && *input_tok) input_tok_cleanup(*input_tok), free(*input_tok), *input_tok = 0;
+void *input_tok_drop(InputTok *input_tok) {
+    if (input_tok) input_tok_cleanup(*input_tok), free(*input_tok), *input_tok = 0;
+    return input_tok;
 }
 
 int input_tok_deb_dprint(int fd, InputTok input_tok) {

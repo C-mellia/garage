@@ -23,7 +23,7 @@ typedef struct input_lexer {
 void input_lexer_init(InputLexer input_lexer, void *mem, size_t align, size_t len);
 InputLexer input_lexer_new(void *mem, size_t align, size_t len);
 void input_lexer_cleanup(InputLexer input_lexer);
-void input_lexer_drop(InputLexer *input_lexer);
+void *input_lexer_drop(InputLexer *input_lexer);
 
 int input_lexer_deb_dprint(int fd, InputLexer input_lexer);
 int input_lexer_deb_print(InputLexer input_lexer);

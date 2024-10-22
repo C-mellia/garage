@@ -62,7 +62,7 @@ typedef struct test {
 void test_init(Test test, size_t align);
 Test test_new(size_t align);
 void test_cleanup(Test test);
-void test_drop(Test *test);
+void *test_drop(Test *test);
 
 int test_deb_dprint(int fd, Test test);
 int test_deb_print(Test test);

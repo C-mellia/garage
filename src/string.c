@@ -8,7 +8,9 @@
 #include <garage/log.h>
 #include <garage/string.h>
 #include <garage/ascii.h>
+#include <garage/slice.h>
 
+#include "./.array.c"
 #include "./.string.c"
 // #include "./.search.c"
 
@@ -44,8 +46,9 @@ void string_cleanup(String string) {
     arr_cleanup(arr);
 }
 
-void string_drop(String *string) {
-    if (string && *string) string_cleanup(*string), free(*string), *string = 0;
+void *string_drop(String *string) {
+    if (string) string_cleanup(*string), free(*string), *string = 0;
+    return string;
 }
 
 int string_deb_dprint(int fd, String string) {
@@ -65,6 +68,46 @@ int string_dprint(int fd, String string) {
 
 int string_print(String string) {
     return fflush(stdout), string_dprint(1, string);
+}
+
+size_t string_cap(String string) {
+    nul_check(String, string);
+    return string->arr_slice_len;
+}
+
+size_t string_len(String string) {
+    nul_check(String, string);
+    return string->arr_len;
+}
+
+size_t string_align(String string) {
+    nul_check(String, string);
+    return string->arr_slice_align;
+}
+
+void *string_get(String string, size_t idx) {
+    nul_check(String, string);
+    return idx < string->arr_len? __arr_get((void *)string->arr, idx): 0;
+}
+
+void string_push_back(String string, void *data) {
+    nul_check(String, string);
+    arr_push_back((void *)string->arr, data);
+}
+
+void string_push_front(String string, void *data) {
+    nul_check(String, string);
+    arr_push_front((void *)string->arr, data);
+}
+
+void *string_pop_back(String string) {
+    nul_check(String, string);
+    return arr_pop_back((void *)string->arr);
+}
+
+void *string_pop_front(String string) {
+    nul_check(String, string);
+    return arr_pop_front((void *)string->arr);
 }
 
 void string_vfmt(String string, const char *fmt, va_list args) {

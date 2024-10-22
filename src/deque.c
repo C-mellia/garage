@@ -28,8 +28,9 @@ void deq_cleanup(Deque deq) {
     slice->mem = 0, deq->begin = deq->len = slice->len = 0;
 }
 
-void deq_drop(Deque *deq) {
-    if (deq && *deq) deq_cleanup(*deq), free(*deq), *deq = 0;
+void *deq_drop(Deque *deq) {
+    if (deq) deq_cleanup(*deq), free(*deq), *deq = 0;
+    return deq;
 }
 
 void *deq_push_back(Deque deq, void *mem) {
