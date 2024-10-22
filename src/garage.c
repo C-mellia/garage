@@ -171,3 +171,7 @@ void fd_drop(int *fd) {
 void ptr_drop(void *ptr) {
     if (ptr && *(void **)ptr) free(*(void **)ptr), *(void **)ptr = 0;
 }
+
+void dummy_drop(void *ptr) {
+    (void)ptr;
+}

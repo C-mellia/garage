@@ -2,6 +2,7 @@
 #include <garage/input_tok.h>
 #include <garage/slice.h>
 #include <garage/http.h>
+#include <garage/engine.h>
 
 #define SLICE_CONST(LIT) { .mem = LIT, .align = 1, .len = sizeof LIT - 1 }
 
@@ -170,4 +171,11 @@ const struct slice req_str[] = {
     [REQUEST_CONNECT] = SLICE_CONST("CONNECT"),
     [REQUEST_TRACE] = SLICE_CONST("TRACE"),
     [REQUEST_PATCH] = SLICE_CONST("PATCH"),
+};
+
+const char *const engine_type_str[] = {
+    [ENGINE_FILE_DESCRIPTOR] = "ENGINE_FILE_DESCRIPTOR",
+    [ENGINE_NESTED_STREAM] = "ENGINE_NESTED_STREAM",
+    [ENGINE_RANGE] = "ENGINE_RANGE",
+    [ENGINE_FUNCTIONAL] = "ENGINE_FUNCTIONAL",
 };

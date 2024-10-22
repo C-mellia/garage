@@ -51,5 +51,6 @@ int object_dprint_redirect(void *obj, Dprint dprint);
 
 void fd_drop(int *fd);
 void ptr_drop(void *ptr);
+void dummy_drop(void *ptr);
 
 #endif // GARAGE_H
