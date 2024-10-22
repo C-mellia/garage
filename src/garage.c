@@ -151,7 +151,7 @@ int buffered_vprintf(const char *fmt, va_list args) {
 
 int object_dprint_redirect(void *obj, Dprint dprint) {
     int pfd[2] = {0};
-    if (dprint && pipe(pfd) == -1) return -1;
+    if (!dprint || pipe(pfd) == -1) return -1;
     dprint(pfd[1], obj);
     close(pfd[1]);
     return pfd[0];
