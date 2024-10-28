@@ -39,6 +39,13 @@ Array arr_move(Array arr, Array oth) {
     return arr;
 }
 
+Array arr_copy(Array arr, Array oth) {
+    nul_check(Array, arr), nul_check(Array, oth);
+    arr_check_cap(arr, oth->len);
+    memcpy(arr->slice_mem, oth->slice_mem, oth->len * oth->slice_align);
+    return arr;
+}
+
 Array arr_clone(Array arr) {
     if (!arr) return 0;
     Array new_arr = arr_new(arr->slice_align);

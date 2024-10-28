@@ -11,14 +11,14 @@
 #endif // GARAGE_RELEASE
 
 #define assert(cond, msg, ...) \
-    (void)(!!(cond) || log_fmt("%s:%d:%s: " msg, __FILE__, __LINE__, __func__, ##__VA_ARGS__))
+    (void)(!!(cond) || (panic("%s:%d:%s: " msg, __FILE__, __LINE__, __func__, ##__VA_ARGS__), 0))
 #define panic(msg, ...) \
     (void) (log_fmt("%s:%d:%s: " msg, __FILE__, __LINE__, __func__, ##__VA_ARGS__), _abort())
 #define nul_check(Type, obj) assert((obj), #Type "(" #obj ") is NULL at this point\n")
 #define alloc_check(allocate, ptr, size) assert((ptr), #allocate " failed for size of 0x%lx\n", size);
 
 
-extern int logfd;
+extern int __logfd;
 
 int log_fmt(const char *msg, ...) __attribute__((format(printf, 1, 2)));
 

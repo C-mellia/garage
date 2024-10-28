@@ -23,7 +23,7 @@ typedef struct garage {
 
 typedef void (*handle_func)(int);
 
-int logfd = -1;
+int __logfd = -1;
 
 static Garage garage = 0;
 
@@ -70,11 +70,11 @@ void setup_env(
     signal(SIGUSR1, handle_signal);
 
     if (garage->logfname) {
-        logfd = open(garage->logfname,
+        __logfd = open(garage->logfname,
                 O_WRONLY | O_CREAT | O_TRUNC,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     } else if (garage->fallback_to_stderr) {
-        logfd = 2;
+        __logfd = 2;
     }
 
     if (garage->exec_startup) garage->exec_startup();
@@ -96,8 +96,8 @@ void cleanup(void) {
     if (!garage) return;
     if (garage->exec_cleanup) garage->exec_cleanup();
 
-    if (logfd != -1) {
-        close(logfd);
+    if (__logfd != -1) {
+        close(__logfd);
         if (garage->auto_report && file_size(garage->logfname)) {
             char buf[0x100];
             sprintf(buf, "less %s", garage->logfname);
@@ -111,7 +111,7 @@ int log_fmt(const char *msg, ...) {
     va_list args;
     int res;
     va_start(args, msg);
-    if (logfd >= 0) res = vdprintf(logfd, msg, args);
+    if (__logfd >= 0) res = vdprintf(__logfd, msg, args);
     va_end(args);
     return res;
 }

@@ -22,6 +22,7 @@ typedef struct array {
 void arr_init(Array arr, size_t align);
 Array arr_new(size_t align);
 Array arr_move(Array arr, Array oth);
+Array arr_copy(Array arr, Array oth);
 Array arr_clone(Array arr);
 Array arr_from_slice(struct slice *slice);
 void arr_cleanup(Array arr);

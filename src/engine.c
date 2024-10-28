@@ -11,7 +11,7 @@
 
 #include "./.engine.c"
 
-extern const char *const engine_type_str[__ENGINE_COUNT];
+extern const char *const __engine_type_str[__ENGINE_COUNT];
 
 void engine_init(Engine engine, EngineType type, ...) {
     nul_check(Engine, engine);
@@ -29,7 +29,7 @@ Engine engine_new(EngineType type, ...) {
 
 void engine_cleanup(Engine engine) {
 #define invalid_type(FMT, ...) ({\
-    const char *type_str = engine->type < __ENGINE_COUNT? engine_type_str[engine->type]: "INVALID_ENGINE_TYPE";\
+    const char *type_str = engine->type < __ENGINE_COUNT? __engine_type_str[engine->type]: "INVALID_ENGINE_TYPE";\
     panic("Engine Type: '%s'(%d) is not valid" FMT, type_str, engine->type, ##__VA_ARGS__);\
 })
     if (!engine) return;
@@ -64,7 +64,7 @@ void *engine_drop(Engine *engine) {
 int engine_deb_dprint(int fd, Engine engine) {
     if (!engine) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
-    const char *const type_str = engine->type < __ENGINE_COUNT? engine_type_str[engine->type]: "INVALID_ENGINE_TYPE";
+    const char *const type_str = engine->type < __ENGINE_COUNT? __engine_type_str[engine->type]: "INVALID_ENGINE_TYPE";
     string_fmt(string, "{type: '%s'(%d), align: %zu, data: ", type_str, engine->type, engine->align);
     engine_data_fmt(string, engine->type, engine->data);
     string_fmt(string, "}");

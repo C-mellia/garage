@@ -1,93 +1,50 @@
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include <garage/prelude.h>
+#include <garage/stream.h>
 #include <garage/input.h>
-#include <garage/string.h>
-#include <garage/slice.h>
-#include <garage/log.h>
-#include <garage/scanner.h>
-#include <garage/ascii.h>
-#include <garage/input_lex.h>
 
-static inline void __test_init(Test test, size_t align);
+#include "./.input.c"
 
-void test_init(Test test, size_t align) {
-    nul_check(Test, test), __test_init(test, align);
+extern const char *const __input_tok_type_str[__INPUT_TOK_COUNT];
+
+void input_init(Input input) {
+    nul_check(Input, input), __input_init(input);
 }
 
-Test test_new(size_t align) {
-    Test test = malloc(sizeof *test);
-    alloc_check(malloc, test, sizeof *test);
-    return __test_init(test, align), test;
+Input input_new(void) {
+    Input input = malloc(sizeof *input);
+    alloc_check(malloc, input, sizeof *input);
+    return __input_init(input), input;
 }
 
-void test_cleanup(Test test) {
-    if (!test) return;
-    Slice input = (void *)test->input, res = (void *)test->res;
-    slice_cleanup(input), slice_cleanup(res);
+void input_cleanup(Input input) {
+    if (!input) return;
+    input_tok_cleanup(input->in), input_tok_cleanup(input->minus_splitter), input_tok_cleanup(input->res), input_tok_cleanup(input->eq_splitter);
 }
 
-void *test_drop(Test *test) {
-    if (test) test_cleanup(*test), free(*test), *test = 0;
-    return test;
+void input_drop(Input *input) {
+    if (input) input_cleanup(*input), free(*input), *input= 0;
 }
 
-int test_deb_dprint(int fd, Test test) {
-    if (!test) return dprintf(fd, "(nil)");
-    Slice input = (void *)test->input, res = (void *)test->res;
+int input_deb_dprint(int fd, Input input) {
+#define get_type_str (input->status < __INPUT_COUNT? __input_tok_type_str[input->status]: "Invalid InputStatus")
+    if (!input) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
-    string_fmt(string, "{input: ");
-    string_fmt_func(string, (void *)slice_deb_dprint, input);
+    string_fmt(string, "{status: '%s', in: ", get_type_str);
+    string_fmt_func(string, (void *)input_tok_deb_dprint, input->in);
+    string_fmt(string, ", minus_splitter: ");
+    string_fmt_func(string, (void *)input_tok_deb_dprint, input->minus_splitter);
     string_fmt(string, ", res: ");
-    string_fmt_func(string, (void *)slice_deb_dprint, res);
+    string_fmt_func(string, (void *)input_tok_deb_dprint, input->res);
+    string_fmt(string, ", eq_splitter: ");
+    string_fmt_func(string, (void *)input_tok_deb_dprint, input->eq_splitter);
     string_fmt(string, "}");
     return string_dprint(fd, string);
 }
+#undef get_type_str
 
-int test_deb_print(Test test) {
-    return test_deb_dprint(1, test);
-}
-
-void tests_from_file(Slice file, Array /* Test */tests) {
-    nul_check(Array, tests), nul_check(Slice, file);
-    InputLexer Cleanup(input_lexer_drop) input_lexer = input_lexer_new(file->mem, file->align, file->len);
-    Array errs = (void *)input_lexer->errs;
-    Test Cleanup(test_drop) test = test_new(file->align);
-    int should_stop = 0, should_be_res = 0, should_push_back = 0;
-
-    for (; !should_stop;) {
-        InputTok Cleanup(input_tok_drop) input_tok = input_lexer_produce(input_lexer);
-        // input_tok_deb_print(input_tok), printf("\n");
-        Slice input = (void *)test->input, res = (void *)test->res, slice = (void *)input_tok->slice;
-
-        if (arr_len(errs)) return;
-        switch(input_tok->type) {
-            case INPUT_TOK_EOF: {
-                should_stop = 1;
-                if (input->mem) should_push_back = 1;
-            } break;
-            case INPUT_TOK_TEXT: {
-                should_be_res
-                    ? should_be_res = 0, slice_copy(res, slice)
-                    : slice_copy(input, slice);
-            } break;
-            case INPUT_TOK_EQ_SPLIT: {
-                if (input->mem) should_push_back = 1;
-            } break;
-            case INPUT_TOK_MINUS_SPLIT: {
-                should_be_res = 1;
-            } break;
-            default: return;
-        }
-
-        if (should_push_back) {
-            arr_push_back(tests, &test), test = test_new(file->align);
-            should_push_back = 0, should_be_res = 0;
-        }
-    }
-}
-
-static void __test_init(Test test, size_t align) {
-    Slice input = (void *)test->input, res = (void *)test->res;
-    slice_init(input, 0, align, 0), slice_init(res, 0, align, 0);
+int input_deb_print(Input input) {
+    return fflush(stdout), input_deb_dprint(1, input);
 }

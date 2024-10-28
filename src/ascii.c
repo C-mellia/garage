@@ -3,8 +3,8 @@
 #include <garage/ascii.h>
 #include <garage/garage.h>
 
-extern const char *const ch_type_str[__CH_COUNT];
-extern const char *const ch_str[128];
+extern const char *const __ch_type_str[__CH_COUNT];
+extern const char *const __ch_str[128];
 
 CharType ch_type(char *ch) {
     if (ch_is_ws(ch)) {
@@ -103,10 +103,10 @@ int ch_is(char *ch, char *oth, int len) {
 }
 
 int ch_deb_dprint(int fd, char *ch) {
-    #define get_type_str (ch_type_str[type]? : "Inval CharType")
+    #define get_type_str (__ch_type_str[type]? : "Inval CharType")
     if (!ch) return dprintf(fd, "(nil)");
     CharType type = ch_type(ch);
-    const char *str = (uint8_t)*ch < 128? ch_str[(uint8_t)*ch]: "Undefined Char";
+    const char *str = (uint8_t)*ch < 128? __ch_str[(uint8_t)*ch]: "Undefined Char";
     switch(type) {
         case CH_CTL ... CH_WS: {
             return dprintf(fd, "{type: '%s', code: '%s'}",

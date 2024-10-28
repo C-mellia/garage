@@ -3,18 +3,18 @@
 #include <garage/slice.h>
 #include <garage/http.h>
 #include <garage/engine.h>
+#include <garage/input.h>
 
 #define SLICE_CONST(LIT) { .mem = LIT, .align = 1, .len = sizeof LIT - 1 }
 
-const char *const input_tok_type_str[] = {
-    [INPUT_TOK_NONE] = "Input Token None",
-    [INPUT_TOK_EOF] = "Input Token End of file",
-    [INPUT_TOK_TEXT] = "Input Token Texts",
-    [INPUT_TOK_EQ_SPLIT] = "Input Token Equals Splitter",
-    [INPUT_TOK_MINUS_SPLIT] = "Input Token Minus Splitter",
+const char *const __input_tok_type_str[__INPUT_TOK_COUNT] = {
+    [INPUT_TOK_EOF] = "eof",
+    [INPUT_TOK_TEXT] = "text",
+    [INPUT_TOK_EQ_SPLIT] = "eq_split",
+    [INPUT_TOK_MINUS_SPLIT] = "minus_split",
 };
 
-const char *const ch_type_str[] = {
+const char *const __ch_type_str[] = {
     [CH_NONE] = "^@",
     [CH_CTL] = "Control character set",
     [CH_WS] = "Whitespace character set",
@@ -24,7 +24,7 @@ const char *const ch_type_str[] = {
 };
 
 // from `man ascii`
-const char *const ch_str[] = {
+const char *const __ch_str[] = {
     ['\000'] = "NUL",
     ['\001'] = "SOH",
     ['\002'] = "STX",
@@ -155,13 +155,13 @@ const char *const ch_str[] = {
     ['\177'] = "DEL",
 };
 
-const struct slice res_str[] = {
+const struct slice __res_str[] = {
     [RESPONSE_OK] = SLICE_CONST("OK"),
     [RESPONSE_NOT_FOUND] = SLICE_CONST("NOT FOUND"),
     [RESPONSE_BAD_REQUEST] = SLICE_CONST("BAD REQUEST"),
 };
 
-const struct slice req_str[] = {
+const struct slice __req_str[] = {
     [REQUEST_GET] = SLICE_CONST("GET"),
     [REQUEST_POST] = SLICE_CONST("POST"),
     [REQUEST_PUT] = SLICE_CONST("PUT"),
@@ -173,9 +173,16 @@ const struct slice req_str[] = {
     [REQUEST_PATCH] = SLICE_CONST("PATCH"),
 };
 
-const char *const engine_type_str[] = {
+const char *const __engine_type_str[] = {
     [ENGINE_FILE_DESCRIPTOR] = "ENGINE_FILE_DESCRIPTOR",
     [ENGINE_NESTED_STREAM] = "ENGINE_NESTED_STREAM",
     [ENGINE_RANGE] = "ENGINE_RANGE",
     [ENGINE_FUNCTIONAL] = "ENGINE_FUNCTIONAL",
+};
+
+const char *const __input_status_str[] = {
+    [INPUT_EMPTY] = "INPUT_EMPTY",
+    [INPUT_IN] = "INPUT_IN",
+    [INPUT_IN_RES] = "INPUT_IN_RES",
+    [INPUT_FULL] = "INPUT_FULL",
 };

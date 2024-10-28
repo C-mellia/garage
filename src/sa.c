@@ -24,7 +24,7 @@ Sa sa_new(size_t cap) {
 
 void sa_cleanup(Sa sa) {
     if (!sa) return;
-    if (!sa_stack_empty(sa) && logfd > 0) {
+    if (!sa_stack_empty(sa) && __logfd > 0) {
         log_fmt("Warning: The amount of times, in which push operations and pop operations are called respectively does not match together\n");
     }
 }
@@ -47,7 +47,7 @@ int sa_deb_print(Sa sa) {
 
 void *sa_alloc(Sa sa, size_t bytes) {
     nul_check(Sa, sa);
-    if (sa_stack_empty(sa) && logfd > 0) {
+    if (sa_stack_empty(sa) && __logfd > 0) {
         log_fmt("Warning: Attempting to allocate memory on Stack Allocator, while pointer stack is empty\n");
     }
     void *res = sa->top < (void *)sa->mem + bytes? 0: (sa->top -= bytes);
