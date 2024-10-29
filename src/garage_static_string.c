@@ -1,19 +1,9 @@
 #include <garage/ascii.h>
-#include <garage/input_tok.h>
 #include <garage/slice.h>
 #include <garage/http.h>
 #include <garage/engine.h>
-#include <garage/input.h>
 
 #define SLICE_CONST(LIT) { .mem = LIT, .align = 1, .len = sizeof LIT - 1 }
-
-const char *const __input_tok_type_str[__INPUT_TOK_COUNT] = {
-    [INPUT_TOK_EOF] = "eof",
-    [INPUT_TOK_TEXT] = "text",
-    [INPUT_TOK_LF] = "lf",
-    [INPUT_TOK_EQ_SPLIT] = "eq_split",
-    [INPUT_TOK_MINUS_SPLIT] = "minus_split",
-};
 
 const char *const __ch_type_str[] = {
     [CH_NONE] = "^@",
@@ -179,14 +169,4 @@ const char *const __engine_type_str[] = {
     [ENGINE_NESTED_STREAM] = "ENGINE_NESTED_STREAM",
     [ENGINE_RANGE] = "ENGINE_RANGE",
     [ENGINE_FUNCTIONAL] = "ENGINE_FUNCTIONAL",
-};
-
-const char *const __input_status_str[] = {
-    [INPUT_EMPTY] = "INPUT_EMPTY",
-    [INPUT_IN] = "INPUT_IN",
-    [INPUT_EQ] = "INPUT_EQ",
-    [__INPUT_IN_MINUS] = "__INPUT_IN_MINUS",
-    [INPUT_IN_RES] = "INPUT_IN_RES",
-    [INPUT_IN_EQ] = "INPUT_IN_EQ",
-    [INPUT_FULL] = "INPUT_FULL",
 };

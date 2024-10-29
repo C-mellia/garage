@@ -46,6 +46,11 @@ void *arr_push_front(Array arr, const void *data);
 void *arr_pop_back(Array arr);
 void *arr_pop_front(Array arr);
 
+void *arr_push_back_mem(Array arr, const void *data, size_t len);
+void *arr_push_front_mem(Array arr, const void *data, size_t len);
+void *arr_pop_back_mem(Array arr, size_t len);
+void *arr_pop_front_mem(Array arr, size_t len);
+
 void *arr_front(Array arr);
 void *arr_back(Array arr);
 void *arr_begin(Array arr);

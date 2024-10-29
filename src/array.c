@@ -177,6 +177,42 @@ void *arr_pop_front(Array arr) {
     return memcpy(__slice_get(slice, arr->len), buf, sizeof buf);
 }
 
+void *arr_push_back_mem(Array arr, const void *data, size_t len) {
+    nul_check(Array, arr);
+    if (!len) return __arr_get(arr, arr->len);
+    arr_check_cap(arr, arr->len + len);
+    void *back = __arr_get(arr, arr->len);
+    arr->len += len;
+    return data? memcpy(back, data, len * arr->slice_align): memset(back, 0, len * arr->slice_align);
+}
+
+void *arr_push_front_mem(Array arr, const void *data, size_t len) {
+    nul_check(Array, arr);
+    if (!len) return __arr_get(arr, 0);
+    arr_check_cap(arr, arr->len + len);
+    memmove(__arr_get(arr, len), __arr_get(arr, 0), arr->len * arr->slice_align);
+    arr->len += len;
+    return data? memcpy(__arr_get(arr, 0), data, len * arr->slice_align): memset(__arr_get(arr, 0), 0, len * arr->slice_align);
+}
+
+void *arr_pop_back_mem(Array arr, size_t len) {
+    nul_check(Array, arr);
+    len = len < arr->len? len: arr->len;
+    if (!len) return __arr_get(arr, arr->len);
+    arr->len -= len;
+    return __arr_get(arr, arr->len);
+}
+
+void *arr_pop_front_mem(Array arr, size_t len) {
+    nul_check(Array, arr);
+    len = len < arr->len? len: arr->len;
+    if (!len) return __arr_get(arr, 0);
+    uint8_t buf[arr->slice_align * len];
+    memcpy(buf, __arr_get(arr, 0), sizeof buf);
+    memmove(__arr_get(arr, 0), __arr_get(arr, len), (arr->len - len) * arr->slice_align);
+    return memcpy(__arr_get(arr, arr->len -= len), buf, sizeof buf);
+}
+
 void *arr_front(Array arr) {
     nul_check(Array, arr);
     return arr->len? __arr_get(arr, 0): 0;
