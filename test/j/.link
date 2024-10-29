@@ -1,0 +1,8 @@
+#!/bin/bash
+
+LD=gcc
+LD_FLAG='-L ../../ -lgarage'
+
+step_exec \
+    "$LD -o main $(for file in $srcs; do echo target/$file.o; done) $LD_FLAG" \
+    "Failed to link target main"

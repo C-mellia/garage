@@ -1,0 +1,10 @@
+#!/bin/bash
+
+CC=gcc
+CC_FLAG='-Wall -Wextra -std=gnu11 -I./include -I../../include/'
+
+for fname in $srcs; do
+    step_exec \
+        "$CC -o ./target/$fname.o -c ./src/$fname.c $CC_FLAG" \
+        "Failed to compile $fname.c"
+done
