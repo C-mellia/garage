@@ -18,11 +18,11 @@ void engine_data_fmt(String string, EngineType type, void *engine_data);
 static inline __attribute__((unused))
 int should_end_at_null(void *item);
 
-extern const char *const engine_type_str[__ENGINE_COUNT];
+extern const char *const __engine_type_str[__ENGINE_COUNT];
 
 static inline void __engine_vinit(Engine engine, EngineType type, va_list args) {
 #define not_implemented(FMT, ...) ({\
-    const char *type_str = type < __ENGINE_COUNT? engine_type_str[type]: "INVALID_ENGINE_TYPE";\
+    const char *type_str = type < __ENGINE_COUNT? __engine_type_str[type]: "INVALID_ENGINE_TYPE";\
     panic("Engine Type: '%s'(%d) Not Implemented: " FMT, type_str, type, ##__VA_ARGS__);\
 })
     #define holder_get_field(holder, field) .field = va_arg(args, typeof(holder->field))

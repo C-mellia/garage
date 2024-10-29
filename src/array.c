@@ -42,7 +42,7 @@ Array arr_move(Array arr, Array oth) {
 Array arr_copy(Array arr, Array oth) {
     nul_check(Array, arr), nul_check(Array, oth);
     arr_check_cap(arr, oth->len);
-    memcpy(arr->slice_mem, oth->slice_mem, oth->len * oth->slice_align);
+    memcpy(arr->slice_mem, oth->slice_mem, oth->len * oth->slice_align), arr->len = oth->len;
     return arr;
 }
 

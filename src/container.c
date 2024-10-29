@@ -67,3 +67,9 @@ Deque deq_from_vec(Vec vec) {
     }
     return deq;
 }
+
+Slice slice_from_arr(Array arr) {
+    if (!arr) return 0;
+    Slice slice = slice_new(arr->slice_mem, arr->slice_align, arr->len);
+    return slice;
+}

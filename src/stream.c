@@ -28,7 +28,11 @@ Stream stream_new(EngineType engine_type, ...) {
 
 void stream_cleanup(Stream stream) {
     if (!stream) return;
+    void *(*drop)(void **item) = stream->engine_drop? : (void *)dummy_drop;
     engine_cleanup((void *)stream->engine);
+    while (deq_len((void *)stream->deq)) {
+        drop(deq_pop_front((void *)stream->deq));
+    }
     deq_cleanup((void *)stream->deq);
 }
 

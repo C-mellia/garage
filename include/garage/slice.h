@@ -47,7 +47,7 @@ void slice_trim_right(Slice slice, void *mem, size_t len);
 
 void slice_split(struct array/* Slice */ *arr, Slice slice, void *mem, size_t len);
 void slice_split_mem(struct array/* Slice */ *arr, Slice slice, void *mem, size_t len);
-Slice slice_split_once(Slice slice, void *item, size_t len);
+Slice slice_split_once(Slice slice, void *items, size_t len);
 Slice slice_split_once_mem(Slice slice, void *mem, size_t len);
 Slice slice_split_at(Slice slice, void *pos);
 Slice slice_split_at_idx(Slice slice, size_t idx);

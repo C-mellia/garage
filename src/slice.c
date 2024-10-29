@@ -64,6 +64,42 @@ void *slice_dup_mem_zero_end(Slice slice) {
     return mem_dup_zero_end(slice->mem, slice->align, slice->len);
 }
 
+int slice_deb_dprint(int fd, Slice slice) {
+    if (!slice) return dprintf(fd, "(nil)");
+    return dprintf(fd, "{mem: %p, align: %zu, len: %zu}",
+                   slice->mem, slice->align, slice->len);
+}
+
+int slice_deb_print(Slice slice) {
+    return fflush(stdout), slice_deb_dprint(1, slice);
+}
+
+int slice_dprint(int fd, Slice slice) {
+    if (!slice || !slice->mem) return dprintf(fd, "(nil)");
+    return dprintf(fd, "%.*s", (int) slice->len, (char *)slice->mem);
+}
+
+int slice_print(Slice slice) {
+    return fflush(stdout), slice_dprint(1, slice);
+}
+
+int slice_hex_dprint(int fd, Slice slice) {
+    if (!slice) return dprintf(fd, "(nil)");
+    String Cleanup(string_drop) string = string_new();
+    string_fmt(string, "[");
+    for (size_t i = 0; i < slice->len; ++i) {
+        string_fmt(string, "0x");
+        string_from_anyint_hex(string, __slice_get(slice, i), slice->align);
+        if (i + 1 < slice->len) string_fmt(string, ", ");
+    }
+    string_fmt(string, "]");
+    return string_dprint(fd, string);
+}
+
+int slice_hex_print(Slice slice) {
+    return fflush(stdout), slice_hex_dprint(1, slice);
+}
+
 void *slice_front(Slice slice) {
     nul_check(Slice, slice);
     return slice_get(slice, 0);
@@ -109,6 +145,19 @@ void slice_split(Array/* Slice */ arr, Slice slice, void *mem, size_t len) {
     nul_check(Slice, slice), nul_check(Array, arr);
     if (!mem) return;
     while (slice->len) {
+        void *res = mem_search_item_or(__slice_begin(slice), __slice_end(slice), mem, len, slice->align);
+        size_t left_len = res? (res - __slice_begin(slice) + slice->align - 1) / slice->align: slice->len;
+        Slice left = slice_new(__slice_begin(slice), slice->align, left_len);
+        slice->mem = max_clamp(res + left->align * len, __slice_end(slice));
+        slice->len = left->len + len < slice->len? slice->len - left->len - len: 0;
+        arr_push_back(arr, &left);
+    }
+}
+
+void slice_split_mem(Array arr, Slice slice, void *mem, size_t len) {
+    nul_check(Slice, slice), nul_check(Array, arr);
+    if (!mem) return;
+    while (slice->len) {
         void *res = mem_search_mem(__slice_begin(slice), __slice_end(slice), mem, len, slice->align);
         size_t left_len = res? (res - __slice_begin(slice) + slice->align - 1) / slice->align: slice->len;
         Slice left = slice_new(__slice_begin(slice), slice->align, left_len);
@@ -118,10 +167,10 @@ void slice_split(Array/* Slice */ arr, Slice slice, void *mem, size_t len) {
     }
 }
 
-Slice slice_split_once(Slice slice, void *item, size_t len) {
+Slice slice_split_once(Slice slice, void *items, size_t len) {
     nul_check(Slice, slice);
-    if (!item) return 0;
-    void *mem_pos = mem_search_mem(__slice_begin(slice), __slice_end(slice), item, len, slice->align)? : __slice_end(slice);
+    if (!items) return 0;
+    void *mem_pos = mem_search_item_or(__slice_begin(slice), __slice_end(slice), items, len, slice->align)? : __slice_end(slice);
     Slice left = slice_new(__slice_begin(slice), slice->align, (mem_pos - __slice_begin(slice)) / slice->align);
     slice->mem = max_clamp(mem_pos + slice->align, __slice_end(slice));
     slice->len = slice->len > left->len + 1? slice->len - left->len - 1: 0;
@@ -138,14 +187,16 @@ Slice slice_split_once_mem(Slice slice, void *mem, size_t len) {
     return left;
 }
 
-int slice_deb_dprint(int fd, Slice slice) {
-    if (!slice) return dprintf(fd, "(nil)");
-    return dprintf(fd, "{mem: %p, align: %zu, len: %zu}",
-                   slice->mem, slice->align, slice->len);
+Slice slice_split_at(Slice slice, void *pos) {
+    nul_check(Slice, slice);
+    if (pos < __slice_begin(slice) || pos > __slice_end(slice)) return 0;
+    return __slice_split_at(slice, pos);
 }
 
-int slice_deb_print(Slice slice) {
-    return fflush(stdout), slice_deb_dprint(1, slice);
+Slice slice_split_at_idx(Slice slice, size_t idx) {
+    nul_check(Slice, slice);
+    if (idx >= slice->len) return 0;
+    return __slice_split_at(slice, __slice_get(slice, idx));
 }
 
 void *slice_search_item(Slice slice, const void *data) {
@@ -162,44 +213,6 @@ void *slice_search_regex(Slice slice, regex_t *regex) {
     nul_check(Slice, slice);
     assert(slice->align == 1, "Expected an alignment of 1, got %zu\n", slice->align);
     return mem_search_regex(__slice_begin(slice), __slice_end(slice), regex, slice->align);
-}
-
-Slice slice_split_at(Slice slice, void *pos) {
-    nul_check(Slice, slice);
-    if (pos < __slice_begin(slice) || pos > __slice_end(slice)) return 0;
-    return __slice_split_at(slice, pos);
-}
-
-Slice slice_split_at_idx(Slice slice, size_t idx) {
-    nul_check(Slice, slice);
-    if (idx >= slice->len) return 0;
-    return __slice_split_at(slice, __slice_get(slice, idx));
-}
-
-int slice_dprint(int fd, Slice slice) {
-    if (!slice || !slice->mem) return dprintf(fd, "(nil)");
-    return dprintf(fd, "%.*s", (int) slice->len, (char *)slice->mem);
-}
-
-int slice_print(Slice slice) {
-    return slice_dprint(1, slice);
-}
-
-int slice_hex_dprint(int fd, Slice slice) {
-    if (!slice) return dprintf(fd, "(nil)");
-    String Cleanup(string_drop) string = string_new();
-    string_fmt(string, "[");
-    for (size_t i = 0; i < slice->len; ++i) {
-        string_fmt(string, "0x");
-        string_from_anyint_hex(string, __slice_get(slice, i), slice->align);
-        if (i + 1 < slice->len) string_fmt(string, ", ");
-    }
-    string_fmt(string, "]");
-    return string_dprint(fd, string);
-}
-
-int slice_hex_print(Slice slice) {
-    return slice_hex_dprint(1, slice);
 }
 
 Slice arr_range(Array arr, size_t begin, size_t end) {

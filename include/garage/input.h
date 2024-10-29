@@ -9,9 +9,12 @@
 typedef enum InputStatus {
     INPUT_EMPTY, // (nil)
     INPUT_IN, // in
-    INPUT_IN_RES, // in, minus_split, res
-    INPUT_FULL, // in, minus_split, res, eq_splitter
-    __INPUT_COUNT,
+    INPUT_EQ, // eq
+    __INPUT_IN_MINUS, // in, minus
+    INPUT_IN_RES, // in, minus, res
+    INPUT_IN_EQ, // in, eq
+    INPUT_FULL, // in, minus, res, eq
+    __INPUT_STATUS_COUNT,
 } InputStatus;
 
 typedef struct input {

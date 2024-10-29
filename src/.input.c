@@ -69,7 +69,8 @@ static void input_stream_add_tok(Input input, Stream tok_stream, StreamStatus3 s
 })
 
 #define set_status(SHOULD_STOP, SHOULD_PEEK, SHOULD_CONSUME) ({\
-    status->should_stop = (SHOULD_STOP), status->should_peek = (SHOULD_PEEK), status->should_consume = (SHOULD_CONSUME);\
+    int __should_stop = (SHOULD_STOP), __should_peek = (SHOULD_PEEK), __should_consume = (SHOULD_CONSUME);\
+    status->should_stop = __should_stop, status->should_peek = __should_peek, status->should_consume = __should_consume;\
 })
 
     if (!peek) {
@@ -80,11 +81,11 @@ static void input_stream_add_tok(Input input, Stream tok_stream, StreamStatus3 s
     switch(input->status) {
         case INPUT_EMPTY: {
             if (peek->type == INPUT_TOK_EOF) {
-                set_status(1, 0, 1);
+                set_status(1, 0, 0);
             } else if (peek->type == INPUT_TOK_TEXT) {
-                input->in = input_tok_clone(peek), set_status(0, 0, 1);
+                input->in = input_tok_clone(peek), input->status = INPUT_IN, set_status(0, 0, 1);
             } else if (peek->type == INPUT_TOK_EQ_SPLIT) {
-                input->eq_splitter = input_tok_clone(peek), set_status(1, 0, 1);
+                input->eq_splitter = input_tok_clone(peek), input->status = INPUT_EQ, set_status(0, 0, 1);
             } else {
                 invalid_tok("unexpected token occured, expected `text` or `eof` token"), set_status(1, 0, 0);
             }
@@ -92,28 +93,40 @@ static void input_stream_add_tok(Input input, Stream tok_stream, StreamStatus3 s
 
         case INPUT_IN: {
             if (peek->type == INPUT_TOK_EOF) {
-                set_status(1, 0, 1);
+                set_status(1, 0, 0);
             } else if (peek->type == INPUT_TOK_MINUS_SPLIT) {
-                input->minus_splitter = input_tok_clone(peek), status->should_consume = 1;
+                input->minus_splitter = input_tok_clone(peek), status->should_consume = 1, input->status = __INPUT_IN_MINUS, set_status(0, 0, 1);
             } else if (peek->type == INPUT_TOK_EQ_SPLIT) {
-                input->eq_splitter = input_tok_clone(peek), status->should_consume = 1, status->should_stop = 1;
+                input->eq_splitter = input_tok_clone(peek), status->should_consume = 1, status->should_stop = 1, input->status = INPUT_IN_EQ, set_status(0, 0, 1);
             } else {
                 invalid_tok("unexpected token occured, expected `eq_splitter` or `minus_splitter` or `eof` token"), set_status(1, 0, 0);
             }
         } break;
 
+        case __INPUT_IN_MINUS: {
+            if (peek->type == INPUT_TOK_EOF) {
+                inval_input_struct("unexpected eof token occured, input structure incomplete"), set_status(1, 0, 0);
+            } else if (peek->type == INPUT_TOK_TEXT) {
+                input->res = input_tok_clone(peek), set_status(1, 0, 0), input->status = INPUT_IN_RES, set_status(0, 0, 1);
+            } else {
+                invalid_tok("unexpected token occured, expected `text` token"), set_status(1, 0, 0);
+            }
+        } break;
+
         case INPUT_IN_RES: {
             if (peek->type == INPUT_TOK_EOF) {
-                set_status(1, 0, 1);
+                set_status(1, 0, 0);
             } else if (peek->type == INPUT_TOK_EQ_SPLIT) {
-                input->eq_splitter = input_tok_clone(peek), set_status(1, 0, 1);
+                input->eq_splitter = input_tok_clone(peek), input->status = INPUT_FULL, set_status(0, 0, 1);
             } else {
                 invalid_tok("unexpected token occured, expected `eq_splitter` or `eof` token"), set_status(1, 0, 0);
             }
         } break;
 
+        case INPUT_EQ:
+        case INPUT_IN_EQ:
         case INPUT_FULL: {
-            set_status(1, 0, 1);
+            set_status(1, 0, 0);
         } break;
 
         default: inval_input_struct("invalid structure of `input`, {in: %p, minus_splitter: %p, res: %p, eq_splitter: %p}",

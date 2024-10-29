@@ -51,7 +51,7 @@ int scnr_deb_dprint(int fd, Scanner scnr) {
 }
 
 int scnr_deb_print(Scanner scnr) {
-    return scnr_deb_dprint(1, scnr);
+    return fflush(stdout), scnr_deb_dprint(1, scnr);
 }
 
 size_t scnr_consume(Scanner scnr, size_t count) {

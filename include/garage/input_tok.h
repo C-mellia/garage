@@ -17,6 +17,7 @@ typedef enum input_tok_type {
     INPUT_TOK_NONE=-1,
     INPUT_TOK_EOF,
     INPUT_TOK_TEXT,
+    INPUT_TOK_LF,
     INPUT_TOK_EQ_SPLIT,
     INPUT_TOK_MINUS_SPLIT,
     __INPUT_TOK_COUNT,
@@ -28,7 +29,7 @@ typedef struct input_tok {
 
     Phantom arr;
     struct {
-        size_t arr_cap;
+        size_t arr_len;
 
         Phantom arr_slice;
         struct {

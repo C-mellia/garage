@@ -8,8 +8,6 @@
 
 #include "./.input_tok.c"
 
-extern const char *const __input_tok_type_str[__INPUT_TOK_COUNT];
-
 void input_tok_init(InputTok input_tok, InputTokType type, size_t ln, size_t col) {
     nul_check(InputTok, input_tok), __input_tok_init(input_tok, type, ln, col);
 }

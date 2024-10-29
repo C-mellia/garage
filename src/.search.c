@@ -3,14 +3,16 @@
 
 #include <regex.h>
 
-static __attribute__((unused))
+static inline __attribute__((unused))
 void *mem_search_item(void *begin, void *end, const void *data, size_t align);
-static __attribute__((unused))
+static inline __attribute__((unused))
 void *mem_search_item_func(void *begin, void *end, int (*cmp)(const void *item), size_t align);
-static __attribute__((unused))
+static inline __attribute__((unused))
 void *mem_search_mem(void *begin, void *end, const void *data, size_t len, size_t align);
-static __attribute__((unused))
+static inline __attribute__((unused))
 void *mem_search_regex(void *begin, void *end, const regex_t *regex, size_t align);
+static inline __attribute__((unused))
+void *mem_search_item_or(void *begin, void *end, const void *data, size_t len, size_t align);
 
 static void *mem_search_item(void *begin, void *end, const void *data, size_t align) {
     while (begin < end) {
@@ -48,6 +50,14 @@ static void *mem_search_regex(void *begin, void *end, const regex_t *regex, size
     regmatch_t match;
     while (begin < end) {
         if (!regexec(regex, begin, 1, &match, 0)) return begin;
+        begin += align;
+    }
+    return 0;
+}
+
+static void *mem_search_item_or(void *begin, void *end, const void *data, size_t len, size_t align) {
+    while (begin < end) {
+        if (mem_search_item((void *)data, (void *)data + align * len, begin, align)) return begin;
         begin += align;
     }
     return 0;

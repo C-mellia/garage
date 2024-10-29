@@ -7,7 +7,8 @@
 
 #include "./.input.c"
 
-extern const char *const __input_tok_type_str[__INPUT_TOK_COUNT];
+// extern const char *const __input_tok_type_str[__INPUT_TOK_COUNT];
+extern const char *const __input_status_str[__INPUT_STATUS_COUNT];
 
 void input_init(Input input) {
     nul_check(Input, input), __input_init(input);
@@ -29,10 +30,10 @@ void input_drop(Input *input) {
 }
 
 int input_deb_dprint(int fd, Input input) {
-#define get_type_str (input->status < __INPUT_COUNT? __input_tok_type_str[input->status]: "Invalid InputStatus")
+#define get_type_str (input->status < __INPUT_STATUS_COUNT? __input_status_str[input->status]: "Invalid InputStatus")
     if (!input) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
-    string_fmt(string, "{status: '%s', in: ", get_type_str);
+    string_fmt(string, "{status: '%s'(%d), in: ", get_type_str, input->status);
     string_fmt_func(string, (void *)input_tok_deb_dprint, input->in);
     string_fmt(string, ", minus_splitter: ");
     string_fmt_func(string, (void *)input_tok_deb_dprint, input->minus_splitter);

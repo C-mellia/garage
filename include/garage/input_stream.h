@@ -14,26 +14,83 @@ typedef struct input_stream {
         size_t ln, col;
     };
 
-    Phantom stream;
+    Phantom stack;
     struct {
-        Phantom deq;
-        struct {
-            size_t deq_begin, deq_len;
+        size_t stack_len;
 
-            Phantom deq_slice;
+        Phantom stack_slice;
+        struct {
+            void *stack_slice_mem;
+            size_t stack_slice_align, stack_slice_len;
+        };
+    };
+
+    Phantom input_stream;
+    struct {
+        Phantom input_stream_deq;
+        struct {
+            size_t input_stream_deb_begin, input_stream_deb_len;
+
+            Phantom input_stream_deb_slice;
             struct {
-                void *deq_slice_mem;
-                size_t deq_slice_align, deq_slice_len;
+                void *input_stream_deb_slice_mem;
+                size_t input_stream_deb_slice_align, input_stream_deb_slice_len;
             };
         };
 
-        Phantom engine;
+        Phantom input_stream_engine;
         struct {
-            EngineType engine_type;
-            int *(*engine_produce) (void *engine_data, void *buf, size_t len, size_t align);
-            void *(*engine_drop)(void **item);
-            size_t engine_align;
-            void *engine_data;
+            EngineType input_stream_engine_type;
+            int *(*input_stream_engine_produce) (void *input_stream_engine_data, void *buf, size_t len, size_t align);
+            void *(*input_stream_engine_drop)(void **item);
+            size_t input_stream_engine_align;
+            void *input_stream_engine_data;
+        };
+    };
+
+    Phantom input_tok_stream;
+    struct {
+        Phantom input_tok_stream_deq;
+        struct {
+            size_t input_tok_stream_deq_begin, input_tok_stream_deq_len;
+
+            Phantom input_tok_stream_deq_slice;
+            struct {
+                void *input_tok_stream_deq_slice_mem;
+                size_t input_tok_stream_deq_slice_align, input_tok_stream_deq_slice_len;
+            };
+        };
+
+        Phantom input_tok_stream_engine;
+        struct {
+            EngineType input_tok_stream_engine_type;
+            int *(*input_tok_stream_engine_produce) (void *input_tok_stream_engine_data, void *buf, size_t len, size_t align);
+            void *(*input_tok_stream_engine_drop)(void **item);
+            size_t input_tok_stream_engine_align;
+            void *input_tok_stream_engine_data;
+        };
+    };
+
+    Phantom fd_stream;
+    struct {
+        Phantom fd_stream_deq;
+        struct {
+            size_t fd_stream_deq_begin, fd_stream_deq_len;
+
+            Phantom fd_stream_deq_slice;
+            struct {
+                void *fd_stream_deq_slice_mem;
+                size_t fd_stream_deq_slice_align, fd_stream_deq_slice_len;
+            };
+        };
+
+        Phantom fd_stream_engine;
+        struct {
+            EngineType fd_stream_engine_type;
+            int *(*fd_stream_engine_produce) (void *fd_stream_engine_data, void *buf, size_t len, size_t align);
+            void *(*fd_stream_engine_drop)(void **item);
+            size_t fd_stream_engine_align;
+            void *fd_stream_engine_data;
         };
     };
 } *InputStream;
