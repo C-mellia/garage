@@ -1,0 +1,52 @@
+(feed)
+Foo bar
+======test[0]
+
+->
+
+stack: ['Foo bar^J', '======test[0]^j']
+deque: []
+
+->
+
+stack: []
+deque: ['Foo bar^J', '======test[0]^j']
+
+->
+
+(feed)
+Foo bar
+======test[1]
+
+->
+
+stack: ['Foo bar^J', '======test[1]^j']
+deque: ['Foo bar^J', '======test[0]^j']
+
+->
+
+stack: []
+deque: ['Foo bar^J', '======test[0]^j', 'Foo bar^J', '======test[1]^j']
+
+->
+
+(feed)
+Foo bar
+Foo bar
+======test[2]
+
+->
+
+stack: ['Foo bar^J', 'Foo bar^J',  '======test[2]^j']
+deque: ['Foo bar^J', '======test[0]^j', 'Foo bar^J', '======test[1]^j']
+
+->
+
+(concat)
+stack: ['Foo bar^JFoo bar^J',  '======test[2]^j']
+deque: ['Foo bar^J', '======test[0]^j', 'Foo bar^J', '======test[1]^j']
+
+->
+
+stack: []
+deque: ['Foo bar^J', '======test[0]^j', 'Foo bar^J', '======test[1]^j', 'Foo bar^JFoo bar^J',  '======test[2]^j']
