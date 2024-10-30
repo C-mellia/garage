@@ -44,7 +44,8 @@ void *stream_drop(Stream *stream) {
 int stream_deb_dprint(int fd, Stream stream) {
     if (!stream) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
-    // printf("%d, %p, %zu, %p\n", stream->engine_type, stream->engine_produce, stream->engine_align, stream->engine_data);
+    // printf("%d, %zu, %p\n", stream->engine_type, stream->engine_align, stream->engine_data);
+    // printf("probe\n");
     string_fmt(string, "{engine: ");
     string_fmt_func(string, (void *)engine_deb_dprint, (void *)stream->engine);
     string_fmt(string, ", deq: ");

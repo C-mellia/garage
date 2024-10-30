@@ -11,7 +11,7 @@
 #endif // GARAGE_RELEASE
 
 #define assert(cond, msg, ...) \
-    (void)(!!(cond) || (panic("%s:%d:%s: " msg, __FILE__, __LINE__, __func__, ##__VA_ARGS__), 0))
+    (void)(!!(cond) || (panic(msg, ##__VA_ARGS__), 0))
 #define panic(msg, ...) \
     (void) (log_fmt("%s:%d:%s: " msg, __FILE__, __LINE__, __func__, ##__VA_ARGS__), _abort())
 #define nul_check(Type, obj) assert((obj), #Type "(" #obj ") is NULL at this point\n")

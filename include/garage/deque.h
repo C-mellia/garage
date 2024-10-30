@@ -31,6 +31,9 @@ int deq_hex_print(Deque deq);
 int deq_idx_dprint(int fd, Deque deq);
 int deq_idx_print(Deque deq);
 
+void deq_reserve(Deque deq, size_t len);
+void deq_resize(Deque deq, size_t len, void *data);
+
 void *deq_push_back(Deque deq, void *data);
 void *deq_push_front(Deque deq, void *data);
 void *deq_pop_back(Deque deq);

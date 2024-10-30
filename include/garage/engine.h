@@ -5,6 +5,7 @@
 #include <garage/types.h>
 
 struct stream;
+struct deque;
 
 typedef enum engine_type {
     ENGINE_NONE=-1,
@@ -47,7 +48,6 @@ typedef enum engine_type {
 */
 typedef struct engine {
     EngineType type;
-    int (*produce) (void *engine_data, void *buf, size_t len, size_t align);
     void *(*drop)(void **item);
     size_t align;
     void *data;
@@ -63,14 +63,14 @@ typedef struct range_holder {
 
 typedef struct stream_holder {
     struct stream *stream; // reference
-    void *(*stream_next)(struct stream *stream, void *data);
+    ssize_t (*stream_next)(struct deque *deq, struct stream *stream, void *data);
     int (*should_end)(void *item);
     int done;
     void *data; // reference
 } *StreamHolder;
 
 typedef struct func_holder {
-    void *(*func_next)(void *data);
+    ssize_t (*func_next)(struct deque *deq, void *data);
     int (*should_end)(void *item);
     int done;
     void *data;
@@ -84,7 +84,8 @@ void *engine_drop(Engine *engine);
 int engine_deb_dprint(int fd, Engine engine);
 int engine_deb_print(Engine engine);
 
+ssize_t engine_next(struct deque *deq, Engine engine);
 // accepts the number of items which is aligned by `engine->align` and returns the bytes written to `buf`
-int engine_produce(Engine engine, void *buf, size_t len);
+// int engine_produce(Engine engine, void *buf, size_t len);
 
 #endif // GARAGE_ENGINE_H

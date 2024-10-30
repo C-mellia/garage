@@ -100,9 +100,9 @@ void *arr_get(Array arr, size_t idx) {
     return idx < arr->len? __arr_get(arr, idx): 0;
 }
 
-int arr_reserve(Array arr, size_t cap) {
+int arr_reserve(Array arr, size_t len) {
     nul_check(Array, arr);
-    return arr_check_cap(arr, cap);
+    return arr_check_cap(arr, len);
 }
 
 // return 0 if recapped otherwise -1
@@ -298,6 +298,12 @@ void *arr_search_mem(Array arr, const void *data, size_t len) {
 void *arr_search_item_func(Array arr, int (*cmp)(const void *item)) {
     nul_check(Array, arr);
     return cmp? mem_search_item_func(arr->slice_mem, __arr_get(arr, arr->len), cmp, arr->slice_align): 0;
+}
+
+void arr_cat(Array arr, Array oth) {
+    nul_check(Array, arr);
+    if (!oth) return;
+    arr_push_back_mem(arr, oth->slice_mem, oth->len);
 }
 
 void arr_random(RandomEngine re, Array/* Array */ arr, size_t align, size_t items) {

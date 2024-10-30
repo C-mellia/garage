@@ -4,10 +4,6 @@
 #include <garage/types.h>
 #include <garage/engine.h>
 
-typedef struct stream_status3 {
-    int should_stop, should_peek, should_consume;
-} *StreamStatus3;
-
 /**
 * A different design than `scanner` that datas are not buffered in a dynamic
 * array instead a deque is used for optimized pop_front, and to allow only read
@@ -28,7 +24,6 @@ typedef struct stream {
     Phantom engine;
     struct {
         EngineType engine_type;
-        int *(*engine_produce) (void *engine_data, void *buf, size_t len, size_t align);
         void *(*engine_drop)(void **item);
         size_t engine_align;
         void *engine_data;

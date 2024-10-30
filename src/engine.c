@@ -8,8 +8,11 @@
 #include <garage/prelude.h>
 #include <garage/stream.h>
 #include <garage/engine.h>
+#include <garage/deque.h>
 
 #include "./.engine.c"
+
+#define __BUF_LEN 8
 
 extern const char *const __engine_type_str[__ENGINE_COUNT];
 
@@ -75,7 +78,34 @@ int engine_deb_print(Engine engine) {
     return fflush(stdout), engine_deb_dprint(1, engine);
 }
 
-int engine_produce(Engine engine, void *buf, size_t len) {
+ssize_t engine_next(struct deque *deq, Engine engine) {
     nul_check(Engine, engine);
-    return engine->produce(engine->data, buf, len, engine->align);
+    switch(engine->type) {
+        case ENGINE_FILE_DESCRIPTOR: {
+            uint8_t buf[__BUF_LEN];
+            int len = fd_produce(engine->data, buf, sizeof buf);
+            deq_reserve(deq, deq->len + len);
+            for (int i = 0; i < len; ++i) deq_push_back(deq, buf + i);
+            return len;
+        } break;
+
+        case ENGINE_NESTED_STREAM: {
+            StreamHolder stream_holder = engine->data;
+            return stream_holder->stream_next(deq, stream_holder->stream, stream_holder->data);
+        } break;
+
+        case ENGINE_RANGE: {
+            ssize_t buf[__BUF_LEN];
+            int len = range_produce(engine->data, buf, sizeof buf);
+            for (int i = 0; i < len; ++i) deq_push_back(deq, buf + i);
+            return len;
+        } break;
+
+        case ENGINE_FUNCTIONAL: {
+            FuncHolder func_holder = engine->data;
+            return func_holder->func_next(deq, func_holder->data);
+        } break;
+
+        default: return -1;
+    }
 }

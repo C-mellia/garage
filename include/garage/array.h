@@ -35,7 +35,7 @@ int arr_hex_print(Array arr);
 int arr_hex_dprint(int fd, Array arr);
 
 void *arr_get(Array arr, size_t idx);
-int arr_reserve(Array arr, size_t cap);
+int arr_reserve(Array arr, size_t len);
 int arr_resize(Array arr, size_t len, const void *data);
 int arr_reinterp(Array arr, size_t align);
 void *arr_dup_mem(Array arr);
@@ -71,6 +71,9 @@ void *arr_search_item_func(Array arr, int (*cmp)(const void *item));
 Array arr_from_slice(struct slice *slice);
 Array arr_from_vec(struct vec *vec);
 Array arr_from_deque(struct deque *dq);
+
+void arr_cat(Array arr, Array oth);
+
 void arr_random(struct random_engine *re, Array/* Array */ arr, size_t align, size_t items);
 
 #endif // ARRAY_H

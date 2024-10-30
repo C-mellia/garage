@@ -33,44 +33,6 @@ void *deq_drop(Deque *deq) {
     return deq;
 }
 
-void *deq_push_back(Deque deq, void *mem) {
-    nul_check(Deque, deq);
-    Slice slice = (void *)deq->slice;
-    deq_check_cap(deq, deq->len + 1);
-    if (mem) {
-        return memcpy(__deq_get(deq, deq->len++), mem, slice->align);
-    } else {
-        return memset(__deq_get(deq, deq->len++), 0, slice->align);
-    }
-}
-
-void *deq_push_front(Deque deq, void *mem) {
-    nul_check(Deque, deq);
-    Slice slice = (void *)deq->slice;
-    deq_check_cap(deq, ++deq->len);
-    deq->begin = deq->begin? deq->begin - 1: slice->len - 1;
-    if (mem) {
-        return memcpy(__slice_get(slice, deq->begin), mem, slice->align);
-    } else {
-        return memset(__slice_get(slice, deq->begin), 0, slice->align);
-    }
-}
-
-void *deq_pop_back(Deque deq) {
-    nul_check(Deque, deq);
-    if (!deq->len) return 0;
-    return __deq_get(deq, --deq->len);
-}
-
-void *deq_pop_front(Deque deq) {
-    nul_check(Deque, deq);
-    Slice slice = (void *)deq->slice;
-    if (!deq->len) return 0;
-    void *begin = __slice_get(slice, deq->begin);
-    deq->begin = deq->begin + 1 < slice->len? deq->begin + 1: 0;
-    return --deq->len, begin;
-}
-
 int deq_deb_dprint(int fd, Deque deq) {
     if (!deq) dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
@@ -118,6 +80,60 @@ int deq_idx_dprint(int fd, Deque deq) {
 
 int deq_idx_print(Deque deq) {
     return fflush(stdout), deq_idx_dprint(1, deq);
+}
+
+void deq_reserve(Deque deq, size_t len) {
+    nul_check(Deque, deq);
+    deq_check_cap(deq, len);
+}
+
+void deq_resize(Deque deq, size_t len, void *data) {
+    nul_check(Deque, deq);
+    deq_check_cap(deq, len);
+    if (data) {
+        for (size_t i = deq->len; i < len; ++i) {
+            memcpy(__deq_get(deq, i), data, deq->slice_align);
+        }
+    }
+    deq->len = len;
+}
+
+void *deq_push_back(Deque deq, void *mem) {
+    nul_check(Deque, deq);
+    Slice slice = (void *)deq->slice;
+    deq_check_cap(deq, deq->len + 1);
+    if (mem) {
+        return memcpy(__deq_get(deq, deq->len++), mem, slice->align);
+    } else {
+        return memset(__deq_get(deq, deq->len++), 0, slice->align);
+    }
+}
+
+void *deq_push_front(Deque deq, void *mem) {
+    nul_check(Deque, deq);
+    Slice slice = (void *)deq->slice;
+    deq_check_cap(deq, ++deq->len);
+    deq->begin = deq->begin? deq->begin - 1: slice->len - 1;
+    if (mem) {
+        return memcpy(__slice_get(slice, deq->begin), mem, slice->align);
+    } else {
+        return memset(__slice_get(slice, deq->begin), 0, slice->align);
+    }
+}
+
+void *deq_pop_back(Deque deq) {
+    nul_check(Deque, deq);
+    if (!deq->len) return 0;
+    return __deq_get(deq, --deq->len);
+}
+
+void *deq_pop_front(Deque deq) {
+    nul_check(Deque, deq);
+    Slice slice = (void *)deq->slice;
+    if (!deq->len) return 0;
+    void *begin = __slice_get(slice, deq->begin);
+    deq->begin = deq->begin + 1 < slice->len? deq->begin + 1: 0;
+    return --deq->len, begin;
 }
 
 void *deq_remove(Deque deq, size_t idx) {

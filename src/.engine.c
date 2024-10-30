@@ -10,10 +10,6 @@ int fd_produce(FdHolder fd_holder, void *buf, size_t len);
 static inline __attribute__((unused))
 int range_produce(RangeHolder range_holder, ssize_t *buf, size_t len);
 static inline __attribute__((unused))
-int stream_produce(StreamHolder stream_holder, void *buf, size_t len, size_t align);
-static inline __attribute__((unused))
-int func_produce(FuncHolder func_holder, void *buf, size_t len, size_t align);
-static inline __attribute__((unused))
 void engine_data_fmt(String string, EngineType type, void *engine_data);
 static inline __attribute__((unused))
 int should_end_at_null(void *item);
@@ -25,8 +21,10 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
     const char *type_str = type < __ENGINE_COUNT? __engine_type_str[type]: "INVALID_ENGINE_TYPE";\
     panic("Engine Type: '%s'(%d) Not Implemented: " FMT, type_str, type, ##__VA_ARGS__);\
 })
-    #define holder_get_field(holder, field) .field = va_arg(args, typeof(holder->field))
-    #define assign_arg(var) ({ var = va_arg(args, typeof(var)); })
+
+#define holder_get_field(holder, field) .field = va_arg(args, typeof(holder->field))
+
+#define assign_arg(var) ({ var = va_arg(args, typeof(var)); })
 
     engine->type = type;
     switch(type) {
@@ -36,7 +34,7 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
             *fd_holder = (struct fd_holder) {
                 holder_get_field(fd_holder, fd),
             };
-            engine->produce = (void *)fd_produce, engine->align = 1, engine->data = fd_holder;
+            engine->align = 1, engine->data = fd_holder;
         } break;
 
         case ENGINE_NESTED_STREAM: {
@@ -49,8 +47,10 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
                 .done = 0,
                 holder_get_field(stream_holder, data),
             };
-            engine->produce = (void *)stream_produce, engine->data = stream_holder;
-            assign_arg(engine->drop), assign_arg(engine->align);
+            engine->data = stream_holder;
+            assign_arg(engine->drop);
+            assign_arg(engine->align);
+            // printf("%p, %p, %p, %p, %p, %zu\n", stream_holder->stream, stream_holder->stream_next, stream_holder->should_end, stream_holder->data, engine->drop, engine->align);
         } break;
 
         case ENGINE_RANGE: {
@@ -61,7 +61,7 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
                 holder_get_field(range_holder, begin),
                 holder_get_field(range_holder, end),
             };
-            engine->produce = (void *)range_produce, engine->align = sizeof range_holder->begin, engine->data = range_holder;
+            engine->align = sizeof(ssize_t), engine->data = range_holder;
         } break;
 
         case ENGINE_FUNCTIONAL: {
@@ -73,13 +73,16 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
                 .done = 0,
                 holder_get_field(func_holder, data),
             };
-            engine->produce = (void *)func_produce, engine->data = func_holder;
+            engine->data = func_holder;
             assign_arg(engine->drop), assign_arg(engine->align);
         } break;
 
         default: not_implemented("");
     }
 }
+
+#undef assign_arg
+#undef holder_get_field
 #undef not_implemented
 
 static void va_list_drop(va_list *list) {
@@ -95,28 +98,6 @@ static int range_produce(RangeHolder range_holder, ssize_t *buf, size_t len) {
     if (range_holder->begin > range_holder->end) return -1;
     while (len && range_holder->begin != range_holder->end) *buf++ = range_holder->begin, --len, range_holder->begin += range_holder->step;
     return (void *)buf - __buf;
-}
-
-static int stream_produce(StreamHolder stream_holder, void *buf, size_t len, size_t align) {
-    void *__buf = buf;
-    int (*should_end)(void *item) = stream_holder->should_end? : should_end_at_null;
-    while(len && !stream_holder->done) {
-        void *val = stream_holder->stream_next(stream_holder->stream, stream_holder->data);
-        stream_holder->done = should_end(val);
-        memcpy(buf, &val, align), buf += align, --len;
-    }
-    return !len || __buf != buf? buf - __buf: -1;
-}
-
-static int func_produce(FuncHolder func_holder, void *buf, size_t len, size_t align) {
-    void *__buf = buf;
-    int (*should_end)(void *item) = func_holder->should_end? : should_end_at_null;
-    while(len && !func_holder->done) {
-        void *val = func_holder->func_next(func_holder->data);
-        func_holder->done = should_end(val);
-        memcpy(buf, &val, align), buf += align, --len;
-    }
-    return !len || __buf != buf? buf - __buf: -1;
 }
 
 static void engine_data_fmt(String string, EngineType type, void *engine_data) {

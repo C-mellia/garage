@@ -6,6 +6,9 @@
 #include <garage/ascii.h>
 #include <garage/stream.h>
 
+#include <input_tok.h>
+#include <input_tok_pipe.h>
+
 static void nest_startup(void);
 static void nest_cleanup(void);
 static void body(void);
@@ -28,6 +31,8 @@ static void nest_cleanup(void) {
 static void body(void) {
     int Cleanup(fd_drop) fd = open(input_fname, O_RDONLY);
     assert(fd != -1, "Failed to open file '%s'\n", input_fname);
+
+#if 0
     Stream Cleanup(stream_drop) stream = stream_new(ENGINE_FILE_DESCRIPTOR, fd);
     for (;;) {
         void *peek = stream_peek(stream, 0);
@@ -35,4 +40,16 @@ static void body(void) {
         ch_deb_print(peek), printf("\n");
         stream_consume(stream, 1);
     }
+#else
+
+    InputTokPipe Cleanup(input_tok_pipe_drop) input_tok_pipe = input_tok_pipe_new(fd);
+    input_tok_pipe_deb_print(input_tok_pipe), printf("\n");
+    Stream tok_stream = (void *)input_tok_pipe->tok_stream;
+    for (;;) {
+        InputTok *peek = stream_peek(tok_stream, 0);
+        if (!peek) break;
+        input_tok_deb_print(*peek), printf("\n");
+        stream_consume(tok_stream, 1);
+    }
+#endif
 }

@@ -26,11 +26,11 @@ void *input_tok_drop(InputTok *input_tok) {
 }
 
 int input_tok_deb_dprint(int fd, InputTok input_tok) {
-#define get_type_str (input_tok->type < __INPUT_TOK_COUNT? input_tok_type_str[input_tok->type]: "Invalid Input Token Type")
+#define get_type_str (input_tok->type < __INPUT_TOK_COUNT? __input_tok_type_str[input_tok->type]: "Invalid Input Token Type")
     if (!input_tok) return dprintf(fd, "(nil)");
     String Cleanup(string_drop) string = string_new();
-    string_fmt(string, "{type: '%s', ln: %zu, col: %zu, arr: ",
-               get_type_str, input_tok->ln, input_tok->col);
+    string_fmt(string, "{type: '%s'(%d), ln: %zu, col: %zu, arr: ",
+               get_type_str, input_tok->type, input_tok->ln, input_tok->col);
     string_fmt_func(string, (void *)arr_deb_dprint, (void *)input_tok->arr);
     string_fmt(string, "}");
     return string_dprint(fd, string);
@@ -39,4 +39,8 @@ int input_tok_deb_dprint(int fd, InputTok input_tok) {
 
 int input_tok_deb_print(InputTok input_tok) {
     return fflush(stdout), input_tok_deb_dprint(1, input_tok);
+}
+
+int input_tok_should_end(InputTok input_tok) {
+    return !input_tok || input_tok->type == INPUT_TOK_EOF;
 }
