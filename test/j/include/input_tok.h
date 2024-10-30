@@ -45,6 +45,4 @@ void *input_tok_drop(InputTok *input_tok);
 int input_tok_deb_dprint(int fd, InputTok input_tok);
 int input_tok_deb_print(InputTok input_tok);
 
-int input_tok_should_end(InputTok input_tok);
-
 #endif // INPUT_TOK_H

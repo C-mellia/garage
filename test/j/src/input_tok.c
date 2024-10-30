@@ -40,7 +40,3 @@ int input_tok_deb_dprint(int fd, InputTok input_tok) {
 int input_tok_deb_print(InputTok input_tok) {
     return fflush(stdout), input_tok_deb_dprint(1, input_tok);
 }
-
-int input_tok_should_end(InputTok input_tok) {
-    return !input_tok || input_tok->type == INPUT_TOK_EOF;
-}

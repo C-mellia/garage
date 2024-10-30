@@ -10,6 +10,8 @@ void input_tok_stack_concat_text(Deque stack);
 static inline __attribute__((unused))
 void input_tok_add_ch(InputTok input_tok, PipeStatus3 status, Array errs, void *peek);
 
+extern const char *const __input_tok_type_str[__INPUT_TOK_COUNT];
+
 static void __input_tok_pipe_init(InputTokPipe input_tok_pipe, int fd) {
     InputTokPipeData data = (void *)input_tok_pipe->data;
     memset(data, 0, sizeof *data);
@@ -21,7 +23,7 @@ static void __input_tok_pipe_init(InputTokPipe input_tok_pipe, int fd) {
     stream_init(fd_stream, ENGINE_FILE_DESCRIPTOR, fd);
     stream_init(tok_stream, ENGINE_NESTED_STREAM,
                 fd_stream, (void *)input_tok_stream_next,
-                (void *)input_tok_should_end, data, (void *)input_tok_drop,
+                data, (void *)input_tok_drop,
                 sizeof(InputTok));
 }
 
@@ -39,8 +41,6 @@ static ssize_t input_tok_stream_next(Deque deq, Stream fd_stream, InputTokPipeDa
 
     for (; !status->should_stop;) {
         void *peek = stream_peek(fd_stream, 0);
-        if (!peek) break;
-
         input_tok_add_ch(tok, status, errs, peek);
 
         if (status->should_consume) {
@@ -49,7 +49,7 @@ static ssize_t input_tok_stream_next(Deque deq, Stream fd_stream, InputTokPipeDa
             } else {
                 ++coord->col;
             }
-            arr_push_back((void *)tok->arr, peek), stream_consume(fd_stream, 1);
+            if (arr_push_back((void *)tok->arr, peek), stream_consume(fd_stream, 1)) break;;
         }
 
         if (status->should_stash) {
@@ -68,7 +68,8 @@ static ssize_t input_tok_stream_next(Deque deq, Stream fd_stream, InputTokPipeDa
     } else {
         if (deq_len(stack)) input_tok_stack_concat_text(stack);
         while (deq_len(stack)) deq_push_back(deq, deq_pop_front(stack));
-        deq_push_back(deq, &tok);
+        if (tok->type > INPUT_TOK_NONE) deq_push_back(deq, &tok);
+        else input_tok_drop(&tok);
     }
 
     return (ssize_t)deq_len(deq) - prev_len;
@@ -110,16 +111,26 @@ static void input_tok_add_ch(InputTok tok, PipeStatus3 status, Array errs, void 
 
 #define get_type_str (tok->type < __INPUT_TOK_COUNT? __input_tok_type_str[tok->type]: "Invalid Input Token Type")
 
+    // do {
+    //     String Cleanup(string_drop) string = string_new();
+    //     string_fmt(string, "{type: '%s'(%d), ln: %zu, col: %zu, arr: ",
+    //                get_type_str, tok->type, tok->ln, tok->col);
+    //     string_fmt_func(string, (void *)arr_deb_dprint, (void *)tok->arr);
+    //     string_fmt(string, ", peek: "), string_fmt_func(string, (void *)ch_deb_dprint, peek);
+    //     string_fmt(string, "}");
+    //     string_dprint(__logfd, string), dprintf(__logfd, "\n");
+    // } while(0);
+
     switch(tok->type) {
         case INPUT_TOK_NONE: {
             if (!peek) {
                 tok->type = INPUT_TOK_EOF, set_status(0, 0, 0);
             } else if (ch_is(peek, "\n", 1)) {
                 tok->type = INPUT_TOK_TEXT, set_status(0, 1, 1);
-            } else if (ch_is_text(peek)) {
-                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
             } else if (ch_is(peek, "=", 1)) {
                 tok->type = __INPUT_TOK_EQ_SPLITTER0, set_status(0, 0, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
             } else {
                 invalid_char("In `INPUT_TOK_NONE` case"), set_status(1, 0, 0);
             }
@@ -225,7 +236,7 @@ static void input_tok_add_ch(InputTok tok, PipeStatus3 status, Array errs, void 
             }
         } break;
 
-        default: not_implemented("Unknown token type: %d", tok->type), set_status(1, 0, 0);
+        default: not_implemented("Unknown token type: %s(%d)", get_type_str, tok->type), set_status(1, 0, 0);
     }
 }
 

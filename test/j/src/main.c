@@ -36,10 +36,11 @@ static void body(void) {
     Stream Cleanup(stream_drop) stream = stream_new(ENGINE_FILE_DESCRIPTOR, fd);
     for (;;) {
         void *peek = stream_peek(stream, 0);
-        if (!peek) break;
         ch_deb_print(peek), printf("\n");
+        if (!peek) break;
         stream_consume(stream, 1);
     }
+    stream_deb_print(stream), printf("\n");
 #else
 
     InputTokPipe Cleanup(input_tok_pipe_drop) input_tok_pipe = input_tok_pipe_new(fd);
@@ -47,8 +48,12 @@ static void body(void) {
     Stream tok_stream = (void *)input_tok_pipe->tok_stream;
     for (;;) {
         InputTok *peek = stream_peek(tok_stream, 0);
-        if (!peek) break;
         input_tok_deb_print(*peek), printf("\n");
+        if (!peek || (*peek)->type == INPUT_TOK_EOF) break;
+        do {
+            Slice Cleanup(slice_drop) slice = slice_from_arr((void *)(*peek)->arr);
+            slice_print(slice);
+        } while(0);
         stream_consume(tok_stream, 1);
     }
 #endif

@@ -11,8 +11,6 @@ static inline __attribute__((unused))
 int range_produce(RangeHolder range_holder, ssize_t *buf, size_t len);
 static inline __attribute__((unused))
 void engine_data_fmt(String string, EngineType type, void *engine_data);
-static inline __attribute__((unused))
-int should_end_at_null(void *item);
 
 extern const char *const __engine_type_str[__ENGINE_COUNT];
 
@@ -43,8 +41,6 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
             *stream_holder = (struct stream_holder) {
                 holder_get_field(stream_holder, stream),
                 holder_get_field(stream_holder, stream_next),
-                holder_get_field(stream_holder, should_end),
-                .done = 0,
                 holder_get_field(stream_holder, data),
             };
             engine->data = stream_holder;
@@ -69,8 +65,6 @@ static inline void __engine_vinit(Engine engine, EngineType type, va_list args) 
             alloc_check(malloc, func_holder, sizeof *func_holder);
             *func_holder = (struct func_holder) {
                 holder_get_field(func_holder, func_next),
-                holder_get_field(func_holder, should_end),
-                .done = 0,
                 holder_get_field(func_holder, data),
             };
             engine->data = func_holder;
@@ -112,8 +106,7 @@ static void engine_data_fmt(String string, EngineType type, void *engine_data) {
             StreamHolder stream_holder = engine_data;
             string_fmt(string, "{stream: ");
             string_fmt_func(string, (void *)stream_deb_dprint, stream_holder->stream);
-            string_fmt(string, ", done: %s, data: %p}",
-                       stream_holder->done? "true": "false", stream_holder->data);
+            string_fmt(string, ", data: %p}", stream_holder->data);
         } break;
 
         case ENGINE_RANGE: {
@@ -124,16 +117,11 @@ static void engine_data_fmt(String string, EngineType type, void *engine_data) {
 
         case ENGINE_FUNCTIONAL: {
             FuncHolder func_holder = engine_data;
-            string_fmt(string, "{done: %s, data: %p}",
-                       func_holder->done? "true": "false", func_holder->data);
+            string_fmt(string, "{data: %p}", func_holder->data);
         } break;
 
         default: string_fmt(string, "(inval)");
     }
-}
-
-static int should_end_at_null(void *item) {
-    return !item;
 }
 
 #endif // _GARAGE_ENGINE_C

@@ -32,18 +32,16 @@ typedef enum engine_type {
 *     stream_engine_new(
 *         Stream stream,
 *         void *(*stream_next)(Stream stream, void *data),
-*         int (*should_end)(void *item),
-*         void *data,
-*         void *(*drop)(void **item),
-*         size_t align,
-*     ); [6]
-*     func_engine_new(
-*         void *(*func_next)(void *data),
-*         int (*should_end)(void *item),
 *         void *data,
 *         void *(*drop)(void **item),
 *         size_t align,
 *     ); [5]
+*     func_engine_new(
+*         void *(*func_next)(void *data),
+*         void *data,
+*         void *(*drop)(void **item),
+*         size_t align,
+*     ); [4]
 * ```
 */
 typedef struct engine {
@@ -64,15 +62,11 @@ typedef struct range_holder {
 typedef struct stream_holder {
     struct stream *stream; // reference
     ssize_t (*stream_next)(struct deque *deq, struct stream *stream, void *data);
-    int (*should_end)(void *item);
-    int done;
     void *data; // reference
 } *StreamHolder;
 
 typedef struct func_holder {
     ssize_t (*func_next)(struct deque *deq, void *data);
-    int (*should_end)(void *item);
-    int done;
     void *data;
 } *FuncHolder;
 
