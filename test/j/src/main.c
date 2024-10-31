@@ -50,10 +50,10 @@ static void body(void) {
         InputTok *peek = stream_peek(tok_stream, 0);
         input_tok_deb_print(*peek), printf("\n");
         if (!peek || (*peek)->type == INPUT_TOK_EOF) break;
-        do {
-            Slice Cleanup(slice_drop) slice = slice_from_arr((void *)(*peek)->arr);
-            slice_print(slice);
-        } while(0);
+        // do {
+        //     Slice Cleanup(slice_drop) slice = slice_from_arr((void *)(*peek)->arr);
+        //     slice_print(slice);
+        // } while(0);
         stream_consume(tok_stream, 1);
     }
 #endif
