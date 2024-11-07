@@ -1,5 +1,5 @@
-#ifndef INPUT_TOK_H
-#define INPUT_TOK_H 1
+#ifndef GARAGE_INPUT_TOK_H
+#define GARAGE_INPUT_TOK_H 1
 
 #include <garage/types.h>
 
@@ -17,12 +17,6 @@ typedef enum InputTokType {
     __INPUT_TOK_EQ_SPLITTER5,
     INPUT_TOK_EQ_SPLITTER,
 
-    __INPUT_TOK_MINUS_SPLITTER0,
-    __INPUT_TOK_MINUS_SPLITTER1,
-    __INPUT_TOK_MINUS_SPLITTER2,
-    __INPUT_TOK_MINUS_SPLITTER3,
-    __INPUT_TOK_MINUS_SPLITTER4,
-    __INPUT_TOK_MINUS_SPLITTER5,
     INPUT_TOK_MINUS_SPLITTER,
     __INPUT_TOK_COUNT,
 } InputTokType;
@@ -51,4 +45,4 @@ void *input_tok_drop(InputTok *input_tok);
 int input_tok_deb_dprint(int fd, InputTok input_tok);
 int input_tok_deb_print(InputTok input_tok);
 
-#endif // INPUT_TOK_H
+#endif // GARAGE_INPUT_TOK_H

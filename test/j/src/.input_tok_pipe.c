@@ -129,6 +129,8 @@ static void input_tok_add_ch(InputTok tok, PipeStatus3 status, Array errs, void 
                 tok->type = INPUT_TOK_TEXT, set_status(0, 1, 1);
             } else if (ch_is(peek, "=", 1)) {
                 tok->type = __INPUT_TOK_EQ_SPLITTER0, set_status(0, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = __INPUT_TOK_MINUS_SPLITTER0, set_status(0, 0, 0);
             } else if (ch_is_text(peek)) {
                 tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
             } else {
@@ -233,6 +235,90 @@ static void input_tok_add_ch(InputTok tok, PipeStatus3 status, Array errs, void 
                 set_status(0, 1, 0);
             } else {
                 invalid_char("In `INPUT_TOK_EQ_SPLITTER` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case __INPUT_TOK_MINUS_SPLITTER0: {
+            if (!peek) {
+                tok->type = INPUT_TOK_TEXT, set_status(1, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = __INPUT_TOK_MINUS_SPLITTER1, set_status(0, 1, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
+            } else {
+                invalid_char("In `__INPUT_TOK_MINUS_SPLITTER0` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case __INPUT_TOK_MINUS_SPLITTER1: {
+            if (!peek) {
+                tok->type = INPUT_TOK_TEXT, set_status(1, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = __INPUT_TOK_MINUS_SPLITTER2, set_status(0, 1, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
+            } else {
+                invalid_char("In `__INPUT_TOK_MINUS_SPLITTER1` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case __INPUT_TOK_MINUS_SPLITTER2: {
+            if (!peek) {
+                tok->type = INPUT_TOK_TEXT, set_status(1, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = __INPUT_TOK_MINUS_SPLITTER3, set_status(0, 1, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
+            } else {
+                invalid_char("In `__INPUT_TOK_MINUS_SPLITTER2` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case __INPUT_TOK_MINUS_SPLITTER3: {
+            if (!peek) {
+                tok->type = INPUT_TOK_TEXT, set_status(1, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = __INPUT_TOK_MINUS_SPLITTER4, set_status(0, 1, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
+            } else {
+                invalid_char("In `__INPUT_TOK_MINUS_SPLITTER3` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case __INPUT_TOK_MINUS_SPLITTER4: {
+            if (!peek) {
+                tok->type = INPUT_TOK_TEXT, set_status(1, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = __INPUT_TOK_MINUS_SPLITTER5, set_status(0, 1, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
+            } else {
+                invalid_char("In `__INPUT_TOK_MINUS_SPLITTER4` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case __INPUT_TOK_MINUS_SPLITTER5: {
+            if (!peek) {
+                tok->type = INPUT_TOK_TEXT, set_status(1, 0, 0);
+            } else if (ch_is(peek, "-", 1)) {
+                tok->type = INPUT_TOK_MINUS_SPLITTER, set_status(0, 1, 0);
+            } else if (ch_is_text(peek)) {
+                tok->type = INPUT_TOK_TEXT, set_status(0, 1, 0);
+            } else {
+                invalid_char("In `__INPUT_TOK_MINUS_SPLITTER5` case"), set_status(1, 0, 0);
+            }
+        } break;
+
+        case INPUT_TOK_MINUS_SPLITTER: {
+            if (!peek) {
+                set_status(1, 1, 0);
+            } else if (ch_is(peek, "\n", 1)) {
+                set_status(1, 1, 0);
+            } else if (ch_is_text(peek)) {
+                set_status(0, 1, 0);
+            } else {
+                invalid_char("In `INPUT_TOK_MINUS_SPLITTER` case"), set_status(1, 0, 0);
             }
         } break;
 
