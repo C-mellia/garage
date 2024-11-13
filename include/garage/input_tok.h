@@ -17,13 +17,18 @@ typedef enum InputTokType {
     __INPUT_TOK_EQ_SPLITTER5,
     INPUT_TOK_EQ_SPLITTER,
 
+    __INPUT_TOK_MINUS_SPLITTER0,
+    __INPUT_TOK_MINUS_SPLITTER1,
+    __INPUT_TOK_MINUS_SPLITTER2,
+    __INPUT_TOK_MINUS_SPLITTER3,
+    __INPUT_TOK_MINUS_SPLITTER4,
+    __INPUT_TOK_MINUS_SPLITTER5,
     INPUT_TOK_MINUS_SPLITTER,
     __INPUT_TOK_COUNT,
 } InputTokType;
 
 typedef struct input_tok {
     InputTokType type;
-    size_t ln, col;
 
     Phantom arr;
     struct {
@@ -37,10 +42,11 @@ typedef struct input_tok {
     };
 } *InputTok;
 
-void input_tok_init(InputTok input_tok, InputTokType type, size_t ln, size_t col);
-InputTok input_tok_new(InputTokType type, size_t ln, size_t col);
+void input_tok_init(InputTok input_tok, InputTokType type);
+InputTok input_tok_new(InputTokType type);
 void input_tok_cleanup(InputTok input_tok);
 void *input_tok_drop(InputTok *input_tok);
+InputTok input_tok_clone(InputTok input_tok);
 
 int input_tok_deb_dprint(int fd, InputTok input_tok);
 int input_tok_deb_print(InputTok input_tok);

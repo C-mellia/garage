@@ -3,20 +3,7 @@
 
 #include <garage/stream.h>
 
-typedef struct pipe_status3 {
-    int should_stop, should_consume, should_stash;
-} *PipeStatus3;
-
-typedef struct coord {
-    size_t ln, col;
-} *Coord;
-
-typedef struct input_tok_pipe_data {
-    Phantom coord;
-    struct {
-        size_t ln, col;
-    };
-
+typedef struct input_pipe_data {
     /**
      * An extra stack to store the tokens that are processed but not yet
      * ready to be piped to the streams. And therefore requires a separate
@@ -26,6 +13,9 @@ typedef struct input_tok_pipe_data {
      * also possible to pop tokens from the front of the stack. It is
      * supposedly a deque, but from the perspective of the purpose of the
      * stack, it will still be considered a stack.
+     *
+     * Currently only the tokenization process requires an extra stack in the
+     * design
      */
     Phantom/* InputTok */ stack;
     struct {
@@ -37,16 +27,11 @@ typedef struct input_tok_pipe_data {
             size_t deq_slice_align, deq_slice_len;
         };
     };
-} *InputTokPipeData;
+} *InputPipeData;
 
-typedef struct input_tok_pipe {
+typedef struct input_pipe {
     Phantom data;
     struct {
-        Phantom coord;
-        struct {
-            size_t ln, col;
-        };
-
         Phantom stack;
         struct {
             size_t deq_begin, deq_len;
@@ -56,6 +41,28 @@ typedef struct input_tok_pipe {
                 void *deq_slice_mem;
                 size_t deq_slice_align, deq_slice_len;
             };
+        };
+    };
+
+    Phantom input_stream;
+    struct {
+        Phantom input_stream_deq;
+        struct {
+            size_t input_stream_deq_begin, input_stream_deq_len;
+
+            Phantom input_stream_deq_slice;
+            struct {
+                void *input_stream_deq_slice_mem;
+                size_t input_stream_deq_slice_align, input_stream_deq_slice_len;
+            };
+        };
+
+        Phantom input_stream_engine;
+        struct {
+            EngineType input_stream_engine_type;
+            void *(*input_stream_engine_drop)(void **item);
+            size_t input_stream_engine_align;
+            void *input_stream_engine_data;
         };
     };
 
@@ -102,14 +109,17 @@ typedef struct input_tok_pipe {
             void *fd_stream_engine_data;
         };
     };
-} *InputTokPipe;
+} *InputPipe;
 
-void input_tok_pipe_init(InputTokPipe input_tok_pipe, int fd);
-InputTokPipe input_tok_pipe_new(int fd);
-void input_tok_pipe_cleanup(InputTokPipe input_tok_pipe);
-void *input_tok_pipe_drop(InputTokPipe *input_tok_pipe);
+void input_pipe_init(InputPipe input_pipe, int fd);
+InputPipe input_pipe_new(int fd);
+void input_pipe_cleanup(InputPipe input_pipe);
+void *input_pipe_drop(InputPipe *input_pipe);
 
-int input_tok_pipe_deb_dprint(int fd, InputTokPipe input_tok_pipe);
-int input_tok_pipe_deb_print(InputTokPipe input_tok_pipe);
+int input_pipe_deb_dprint(int fd, InputPipe input_pipe);
+int input_pipe_deb_print(InputPipe input_pipe);
+
+void *input_pipe_peek(InputPipe input_pipe, size_t idx);
+void input_pipe_consume(InputPipe input_pipe, size_t count);
 
 #endif // INPUT_TOK_PIPE_H

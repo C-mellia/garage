@@ -2,6 +2,8 @@
 #include <garage/slice.h>
 #include <garage/http.h>
 #include <garage/engine.h>
+#include <garage/input_tok.h>
+#include <garage/input.h>
 
 #define SLICE_CONST(LIT) { .mem = LIT, .align = 1, .len = sizeof LIT - 1 }
 
@@ -169,4 +171,18 @@ const char *const __engine_type_str[] = {
     [ENGINE_NESTED_STREAM] = "ENGINE_NESTED_STREAM",
     [ENGINE_RANGE] = "ENGINE_RANGE",
     [ENGINE_FUNCTIONAL] = "ENGINE_FUNCTIONAL",
+};
+
+const char *const __input_tok_type_str[] = {
+    [INPUT_TOK_EOF] = "INPUT_TOK_EOF",
+    [INPUT_TOK_TEXT] = "INPUT_TOK_TEXT",
+    [INPUT_TOK_EQ_SPLITTER] = "INPUT_TOK_EQ_SPLITTER",
+    [INPUT_TOK_MINUS_SPLITTER] = "INPUT_TOK_MINUS_SPLITTER",
+};
+
+const char *const __input_status_str[] = {
+    [INPUT_EMPTY] = "INPUT_EMPTY",
+    [INPUT_IN] = "INPUT_IN",
+    [INPUT_IN_RES] = "INPUT_IN_RES",
+    [INPUT_FULL] = "INPUT_FULL",
 };

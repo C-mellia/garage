@@ -47,6 +47,7 @@ void input_tok_init(InputTok input_tok, InputTokType type, size_t ln, size_t col
 InputTok input_tok_new(InputTokType type, size_t ln, size_t col);
 void input_tok_cleanup(InputTok input_tok);
 void *input_tok_drop(InputTok *input_tok);
+InputTok input_tok_clone(InputTok input_tok);
 
 int input_tok_deb_dprint(int fd, InputTok input_tok);
 int input_tok_deb_print(InputTok input_tok);
