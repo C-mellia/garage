@@ -89,7 +89,7 @@ int slice_hex_dprint(int fd, Slice slice) {
     string_fmt(string, "[");
     for (size_t i = 0; i < slice->len; ++i) {
         string_fmt(string, "0x");
-        string_from_anyint_hex(string, __slice_get(slice, i), slice->align);
+        string_fmt_anyint_hex(string, __slice_get(slice, i), slice->align);
         if (i + 1 < slice->len) string_fmt(string, ", ");
     }
     string_fmt(string, "]");

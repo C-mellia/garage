@@ -41,10 +41,10 @@ __attribute__((nonnull(1, 2)))
 void memswap(void *lhs, void *rhs, size_t align);
 void setup_env(char *logfname, int auto_report, int fallback_to_stderr, void (*exec_startup)(void), void (*exec_cleanup)(void));
 void cleanup(void);
-void __attribute__((noreturn))
-_abort(void);
-void __attribute__((noreturn))
-gracefully_exit(void);
+__attribute__((noreturn))
+void _abort(void);
+__attribute__((noreturn))
+void gracefully_exit(void);
 int buffered_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 int buffered_vprintf(const char *fmt, va_list args);
 int object_dprint_redirect(void *obj, Dprint dprint);

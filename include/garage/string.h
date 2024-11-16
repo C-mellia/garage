@@ -23,7 +23,7 @@ typedef struct string {
 
 void string_init(String string);
 String string_new();
-void string_from_anyint_hex(String string, const void *data, size_t align);
+void string_fmt_anyint_hex(String string, const void *data, size_t align);
 void string_from_file(int fd, String string);
 void string_cleanup(String string);
 void *string_drop(String *string);

@@ -62,7 +62,7 @@ int vec_hex_dprint(int fd, Vec vec) {
     String Cleanup(string_drop) str = string_new();
     string_fmt(str, "[");
     for (size_t i = 0; i < vec->cap; ++i) {
-        string_fmt(str, "0x"), string_from_anyint_hex(str, vec_get(vec, i), vec->align);
+        string_fmt(str, "0x"), string_fmt_anyint_hex(str, vec_get(vec, i), vec->align);
         if (i + 1 < vec->cap) string_fmt(str, ", ");
     }
     string_fmt(str, "]");

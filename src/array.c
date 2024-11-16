@@ -84,7 +84,7 @@ int arr_hex_dprint(int fd, Array arr) {
     string_fmt(string, "[");
     for (size_t i = 0; i < arr->len; ++i) {
         string_fmt(string, "0x");
-        string_from_anyint_hex(string, __arr_get(arr, i), arr->slice_align);
+        string_fmt_anyint_hex(string, __arr_get(arr, i), arr->slice_align);
         if (i + 1 < arr->len) string_fmt(string, ", ");
     }
     string_fmt(string, "]");

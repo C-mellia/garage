@@ -53,7 +53,7 @@ int deq_hex_dprint(int fd, Deque deq) {
     string_fmt(string, "[");
     for (size_t i = 0; i < deq->len; ++i) {
         string_fmt(string, "0x");
-        string_from_anyint_hex(string, __deq_get(deq, i), slice->align);
+        string_fmt_anyint_hex(string, __deq_get(deq, i), slice->align);
         if (i + 1 < deq->len) string_fmt(string, ", ");
     }
     string_fmt(string, "]");

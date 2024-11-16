@@ -30,7 +30,7 @@ String string_new() {
 }
 
 // little endian, so the lsb comes first
-void string_from_anyint_hex(String string, const void *data, size_t align) {
+void string_fmt_anyint_hex(String string, const void *data, size_t align) {
     nul_check(String, string);
     Array arr = (void *)string->arr;
     for (size_t i = 0; i < align; ++i) {
